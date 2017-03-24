@@ -29,9 +29,9 @@ namespace StaticTemplate
                 var semanticModel = compilation.GetSemanticModel(sourceTree);
                 var templateExtractRewriter = new TemplateExtractRewriter();
                 var templateExtractedSyntaxNode = templateExtractRewriter.Visit(sourceTree.GetRoot());
-                var templateInstantiationRewriter = new TemplateResolveRewriter(semanticModel,
+                var templateResolveRewriter = new TemplateResolveRewriter(semanticModel,
                                                             templateExtractRewriter.ClassTemplates);
-                var newSyntaxNode = templateInstantiationRewriter.Visit(templateExtractedSyntaxNode);
+                var newSyntaxNode = templateResolveRewriter.Visit(templateExtractedSyntaxNode);
                 newSyntaxTrees.Add(newSyntaxNode.SyntaxTree);
             }
             compilation = CSharpCompilation.Create("test", newSyntaxTrees, compilation.References,
