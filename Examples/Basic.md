@@ -1,24 +1,8 @@
-# C++-like Templates for C#
+# Basic Exmaple
 
-This repository implements a Roslyn-based compiler for C#,
-which supports C++-like static templates.
 
-Currently a *POC*, the compiler only supports compilation of a single file,
-and does not accept any command-line arguments.
+## Input
 
-See section [Roadmap](#roadmap) to check which features are implemented.
-
-## Usage
-
-```cmd
-StaticTemplate.exe test.cs
-```
-
-... and a `test.exe` (no matter what names the source files have) will be generated in current directory.
-
-## Example
-
-A basic example input file:
 
 ```csharp
 using System;
@@ -88,25 +72,3 @@ namespace Test {
     }
 }
 ```
-
-Though not shown in the example,
-normal generic classes will not be affected.
-
-## Roadmap
-
-* [x] Template instantiation via type parameter substitution.
-* [x] Full specialization.
-* [ ] Partial specialization.
-* [ ] Cross-file template instantiation.
-* [ ] Cross-assembly template instantiation.
-* [ ] Function template.
-* [ ] Support other types (`int`, `bool`, etc.) of template parameters.
-* [ ] Better runtime support (proper way to do reflection, etc.).
-* [ ] Better syntax.
-* [ ] Type aliasing.
-* [ ] Default type arguments.
-* [ ] SFINAE.
-
-## License
-
-MIT.

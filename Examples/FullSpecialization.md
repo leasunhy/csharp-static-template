@@ -1,24 +1,8 @@
-# C++-like Templates for C#
+# Full Specialization Exmaple
 
-This repository implements a Roslyn-based compiler for C#,
-which supports C++-like static templates.
 
-Currently a *POC*, the compiler only supports compilation of a single file,
-and does not accept any command-line arguments.
+## Input
 
-See section [Roadmap](#roadmap) to check which features are implemented.
-
-## Usage
-
-```cmd
-StaticTemplate.exe test.cs
-```
-
-... and a `test.exe` (no matter what names the source files have) will be generated in current directory.
-
-## Example
-
-A basic example input file:
 
 ```csharp
 using System;
@@ -29,6 +13,8 @@ namespace Test {
         static void Main(string[] args) {
             Console.WriteLine(Adder<int>.add(1, 2));
             Console.WriteLine(Adder<double>.add(1.0, 2.0));
+
+            Console.WriteLine(Adder<int>.addTwice(1, 2));
         }
     }
 
@@ -43,6 +29,20 @@ namespace Test {
         public static T add(T lhs, T rhs) {
             T a;
             return lhs + rhs;
+        }
+        // note that the template here has no addTwice member
+    }
+
+    [StaticTemplate]
+    public class Adder<T> where T : IsType<int> {
+        // Full specialization of Adder<int>
+        public static T add(T lhs, T rhs) {
+            T a;
+            return lhs + rhs;
+        }
+
+        public static T addTwice(T lhs, T rhs) {
+            return lhs + rhs + rhs;
         }
     }
 }
@@ -60,18 +60,19 @@ namespace Test {
         static void Main(string[] args) {
             Console.WriteLine(Adder#int#.add(1, 2));
             Console.WriteLine(Adder#double#.add(1.0, 2.0));
+
+            Console.WriteLine(Adder#int#.addTwice(1, 2));
         }
     }
-    public class Adder#int# {
-        int T;
-
-        int TProp { get; set; }
-
-        Func<int, int, int> adder = (l, r) => l + r;
-
+    public class Adder#int#  {
+        // Full specialization of Adder<int>
         public static int add(int lhs, int rhs) {
             int a;
             return lhs + rhs;
+        }
+
+        public static int addTwice(int lhs, int rhs) {
+            return lhs + rhs + rhs;
         }
     }
     public class Adder#double# {
@@ -85,28 +86,8 @@ namespace Test {
             double a;
             return lhs + rhs;
         }
+        // note that the template here has no addTwice member
     }
 }
 ```
 
-Though not shown in the example,
-normal generic classes will not be affected.
-
-## Roadmap
-
-* [x] Template instantiation via type parameter substitution.
-* [x] Full specialization.
-* [ ] Partial specialization.
-* [ ] Cross-file template instantiation.
-* [ ] Cross-assembly template instantiation.
-* [ ] Function template.
-* [ ] Support other types (`int`, `bool`, etc.) of template parameters.
-* [ ] Better runtime support (proper way to do reflection, etc.).
-* [ ] Better syntax.
-* [ ] Type aliasing.
-* [ ] Default type arguments.
-* [ ] SFINAE.
-
-## License
-
-MIT.
