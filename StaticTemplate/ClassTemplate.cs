@@ -15,23 +15,40 @@ namespace StaticTemplate
     public class ClassTemplate
     {
         public ClassDeclarationSyntax Syntax { get; }
+        public string TemplateName { get; }
         public bool IsSpecialized { get; }
-        public IDictionary<TypeParameterSyntax, TypeSyntax> SpecialiedTypeArgs { get; }
-        public string TemplateName { get { return Syntax.Identifier.ToString(); } }
+        public int SpecialiedTypeArgCount { get; }
+        public IEnumerable<TypeSyntax> SpecialiedTypeArgList { get; }
         public string FullName { get { return $"{TemplateName}<{string.Join(", ", TypeParams)}>"; } }
-        public int TypeParamCount { get { return TypeParams.Count(); } }
-        public int RemainingParamCount { get { return TypeParamCount - SpecialiedTypeArgs.Count; } }
         public IEnumerable<TypeParameterSyntax> TypeParams { get { return Syntax.TypeParameterList.Parameters; } }
+        public int TypeParamCount { get { return Syntax.TypeParameterList.Parameters.Count; } }
+        public int RemainingParamCount { get { return TypeParamCount - SpecialiedTypeArgCount; } }
 
         public ClassTemplate(ClassDeclarationSyntax template)
         {
             Syntax = template;
+            TemplateName = Syntax.Identifier.ToString();
 
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
-            if (constraintClauses.Count != 0)
+            SpecialiedTypeArgCount = constraintClauses.Count;
+            IsSpecialized = SpecialiedTypeArgCount != 0;
+            SpecialiedTypeArgList = new List<TypeSyntax>();
+
+            if (IsSpecialized)
             {
-                IsSpecialized = true;
                 Debug.Assert(constraintClauses.Count == TypeParamCount, "Currently only full specialization is supported.");
+                var argDict = TypeParams.ToDictionary(p => p.ToString(), p => default(TypeSyntax));
+                foreach (var clause in constraintClauses)
+                {
+                    var constraint = clause.Constraints.FirstOrDefault() as TypeConstraintSyntax;
+                    Debug.Assert(clause.Constraints.Count == 1 && constraint != null,
+                        "Currently only explicit specialization is supported, exactly one IsType<T> constraint expected.");
+                    var type = constraint.Type as GenericNameSyntax;
+                    Debug.Assert(type.Identifier.ToString() == "IsType");
+                    Debug.Assert(type.TypeArgumentList.Arguments.Count == 1);
+                    argDict[clause.Name.ToString()] = type.TypeArgumentList.Arguments.Single();
+                }
+                SpecialiedTypeArgList = TypeParams.Select(p => argDict[p.ToString()]).ToList();
             }
         }
 
