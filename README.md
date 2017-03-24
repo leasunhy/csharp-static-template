@@ -102,10 +102,11 @@ normal generic classes will not be affected.
 * [ ] Cross-assembly template instantiation.
 * [ ] Function template.
 * [ ] Support other types (`int`, `bool`, etc.) of template parameters.
-* [ ] SFINAE.
 * [ ] Better runtime support (proper way to do reflection, etc.).
 * [ ] Better syntax.
 * [ ] Type aliasing.
+* [ ] Default type arguments.
+* [ ] SFINAE.
 
 ## License
 
