@@ -49,6 +49,8 @@ namespace Test {
 
 ```
 
+## Output
+
 The intermediate result (equivalent code, not valid C#: *note the identifier name*):
 
 ```csharp
