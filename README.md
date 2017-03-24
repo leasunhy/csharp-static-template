@@ -96,7 +96,7 @@ normal generic classes will not be affected.
 ## Roadmap
 
 * [x] Template instantiation via type parameter substitution.
-* [ ] Specialization.
+* [x] Full specialization.
 * [ ] Partial specialization.
 * [ ] Cross-file template instantiation.
 * [ ] Cross-assembly template instantiation.
