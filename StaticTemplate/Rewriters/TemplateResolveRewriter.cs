@@ -14,7 +14,7 @@ namespace StaticTemplate
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
-        private Dictionary<string, ClassDeclarationSyntax> ClassDefs;
+        private Dictionary<string, ClassTemplateGroup> TemplateGroups;
         private SemanticModel SemanticModel;
 
         internal IDictionary<string, ClassDeclarationSyntax> TemplateInstantiations { get; }
@@ -22,8 +22,17 @@ namespace StaticTemplate
         public TemplateResolveRewriter(SemanticModel semanticModel, IEnumerable<ClassDeclarationSyntax> classDefs)
         {
             SemanticModel = semanticModel;
-            ClassDefs = classDefs.ToDictionary(def => def.Identifier.ToString());
             TemplateInstantiations = new Dictionary<string, ClassDeclarationSyntax>();
+
+            TemplateGroups = new Dictionary<string, ClassTemplateGroup>();
+            foreach (var classDef in classDefs)
+            {
+                var key = classDef.Identifier.ToString();
+                ClassTemplateGroup group;
+                if (!TemplateGroups.TryGetValue(key, out group))
+                    TemplateGroups[key] = group = new ClassTemplateGroup();
+                group.AddTemplate(new ClassTemplate(classDef));
+            }
         }
 
         // currently we only allow templates to appear unnested
@@ -42,7 +51,7 @@ namespace StaticTemplate
         {
             // if the node does not refer to a template, just return it unmodified
             var templateName = node.Identifier.ToString();
-            if (!ClassDefs.ContainsKey(templateName))
+            if (!TemplateGroups.ContainsKey(templateName))
                 return node;
 
             // check if the instantiation is already done
@@ -58,9 +67,8 @@ namespace StaticTemplate
 
         private ClassDeclarationSyntax InstantiateTemplate(string templateName, string instName, TypeArgumentListSyntax typeArgs)
         {
-            var template = ClassDefs[templateName];
-            var rewriter = new TemplateInstantiationRewriter(template, instName, typeArgs.Arguments);
-            return (ClassDeclarationSyntax)rewriter.Visit(template);
+            var template = TemplateGroups[templateName].Single();
+            return template.Instantiate(instName, typeArgs.Arguments);
         }
 
         private string GetInstantiationName(string templateName, TypeArgumentListSyntax typeArgs) =>

@@ -150,11 +150,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClassTemplate.cs" />
+    <Compile Include="ClassTemplateGroup.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TemplateExtractRewriter.cs" />
-    <Compile Include="TemplateInstantiationRewriter.cs" />
-    <Compile Include="TemplateResolveRewriter.cs" />
+    <Compile Include="Rewriters\TemplateExtractRewriter.cs" />
+    <Compile Include="Rewriters\TemplateInstantiationRewriter.cs" />
+    <Compile Include="Rewriters\TemplateResolveRewriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
