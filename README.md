@@ -92,6 +92,8 @@ namespace Test {
 Though not shown in the example,
 normal generic classes will not be affected.
 
+For more examples, look into the `Examples` folder.
+
 ## Roadmap
 
 * [x] Template instantiation via type parameter substitution.
