@@ -33,7 +33,25 @@ namespace StaticTemplate
             if (typeArgs.Count() != TypeParamCount)
                 throw new InvalidOperationException("Incorrect number of type arguements for template" + TemplateName);
 
-            throw new NotImplementedException();
+            var best = Templates.Select(temp => Tuple.Create(temp, TypeArgMatch(temp, typeArgs)))
+                                .Where(t => t.Item2.Item1)
+                                .OrderByDescending(t => t.Item2.Item2)
+                                .First().Item1;
+            return best;
+        }
+
+        private Tuple<bool, int> TypeArgMatch(ClassTemplate template, IEnumerable<TypeSyntax> typeArgs)
+        {
+            // TODO(leasunhy): use semantic model?
+            var success = true;
+            var matched = 0;
+            foreach (var t in template.SpecialiedTypeArgList.Zip(typeArgs, (a1, a2) => Tuple.Create(a1, a2)))
+            {
+                success = t.Item1 == null || t.Item1.ToString() == t.Item2.ToString();
+                if (!success) break;
+                matched += (t.Item1 != null && t.Item1.ToString() == t.Item2.ToString()) ? 1 : 0;
+            }
+            return Tuple.Create(success, matched);
         }
 
         IEnumerator IEnumerable.GetEnumerator() { return Templates.GetEnumerator(); }

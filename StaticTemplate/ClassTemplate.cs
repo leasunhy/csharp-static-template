@@ -15,9 +15,9 @@ namespace StaticTemplate
     public class ClassTemplate
     {
         public ClassDeclarationSyntax Syntax { get; }
-        public string TemplateName { get; }
         public bool IsSpecialized { get; }
         public int SpecialiedTypeArgCount { get; }
+        public string TemplateName { get { return Syntax.Identifier.ToString(); } }
         public IEnumerable<TypeSyntax> SpecialiedTypeArgList { get; }
         public string FullName { get { return $"{TemplateName}<{string.Join(", ", TypeParams)}>"; } }
         public IEnumerable<TypeParameterSyntax> TypeParams { get { return Syntax.TypeParameterList.Parameters; } }
@@ -27,7 +27,6 @@ namespace StaticTemplate
         public ClassTemplate(ClassDeclarationSyntax template)
         {
             Syntax = template;
-            TemplateName = Syntax.Identifier.ToString();
 
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
             SpecialiedTypeArgCount = constraintClauses.Count;
@@ -49,6 +48,9 @@ namespace StaticTemplate
                     argDict[clause.Name.ToString()] = type.TypeArgumentList.Arguments.Single();
                 }
                 SpecialiedTypeArgList = TypeParams.Select(p => argDict[p.ToString()]).ToList();
+
+                // clean the constraint clauses
+                Syntax = Syntax.RemoveNodes(constraintClauses, SyntaxRemoveOptions.KeepExteriorTrivia);
             }
         }
 
