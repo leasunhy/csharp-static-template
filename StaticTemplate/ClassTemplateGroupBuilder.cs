@@ -41,10 +41,7 @@ namespace StaticTemplate
             templates.Add(template);
         }
 
-        public ClassTemplate FindTemplateForArguments(IEnumerable<TypeSyntax> typeArgs)
-        {
-            throw new NotImplementedException();
-        }
+        public ClassTemplateGroup Build() { return new ClassTemplateGroup(templates); }
 
         public IEnumerator<ClassTemplate> GetEnumerator() { return templates.GetEnumerator(); }
         IEnumerator IEnumerable.GetEnumerator() { return templates.GetEnumerator(); }

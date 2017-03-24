@@ -14,6 +14,7 @@ namespace StaticTemplate
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
+        private Dictionary<string, ClassTemplateGroupBuilder> TemplateGroupBuilders;
         private Dictionary<string, ClassTemplateGroup> TemplateGroups;
         private SemanticModel SemanticModel;
 
@@ -24,14 +25,14 @@ namespace StaticTemplate
             SemanticModel = semanticModel;
             TemplateInstantiations = new Dictionary<string, ClassDeclarationSyntax>();
 
-            TemplateGroups = new Dictionary<string, ClassTemplateGroup>();
+            TemplateGroupBuilders = new Dictionary<string, ClassTemplateGroupBuilder>();
             foreach (var classDef in classDefs)
             {
                 var key = classDef.Identifier.ToString();
-                ClassTemplateGroup group;
-                if (!TemplateGroups.TryGetValue(key, out group))
-                    TemplateGroups[key] = group = new ClassTemplateGroup();
-                group.AddTemplate(new ClassTemplate(classDef));
+                ClassTemplateGroupBuilder builder;
+                if (!TemplateGroupBuilders.TryGetValue(key, out builder))
+                    TemplateGroupBuilders[key] = builder = new ClassTemplateGroupBuilder();
+                builder.AddTemplate(new ClassTemplate(classDef));
             }
         }
 
@@ -44,6 +45,9 @@ namespace StaticTemplate
             if (TemplateInstantiations.Count == 0)
                 return orig;
 
+            TemplateGroups = TemplateGroupBuilders.Select(pair => Tuple.Create(pair.Key, pair.Value.Build()))
+                                                  .ToDictionary(_ => _.Item1, _ => _.Item2);
+
             return orig.AddMembers(TemplateInstantiations.Values.ToArray());
         }
 
@@ -51,7 +55,7 @@ namespace StaticTemplate
         {
             // if the node does not refer to a template, just return it unmodified
             var templateName = node.Identifier.ToString();
-            if (!TemplateGroups.ContainsKey(templateName))
+            if (!TemplateGroupBuilders.ContainsKey(templateName))
                 return node;
 
             // check if the instantiation is already done
@@ -67,8 +71,8 @@ namespace StaticTemplate
 
         private ClassDeclarationSyntax InstantiateTemplate(string templateName, string instName, TypeArgumentListSyntax typeArgs)
         {
-            var template = TemplateGroups[templateName].Single();
-            return template.Instantiate(instName, typeArgs.Arguments);
+            var group = TemplateGroups[templateName];
+            return group.FindTemplateForArguments(typeArgs.Arguments).Instantiate(instName, typeArgs.Arguments);
         }
 
         private string GetInstantiationName(string templateName, TypeArgumentListSyntax typeArgs) =>
