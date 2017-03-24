@@ -104,6 +104,8 @@ normal generic classes will not be affected.
 * [ ] Support other types (`int`, `bool`, etc.) of template parameters.
 * [ ] SFINAE.
 * [ ] Better runtime support (proper way to do reflection, etc.).
+* [ ] Better syntax.
+* [ ] Type aliasing.
 
 ## License
 
