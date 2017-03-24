@@ -3,7 +3,7 @@
 This repository implements a Roslyn-based compiler for C#,
 which supports C++-like static templates.
 
-Currently a POC, the compiler only supports compilation of a single file,
+Currently a *POC*, the compiler only supports compilation of a single file,
 and does not accept any command-line arguments.
 
 See section [Roadmap](#roadmap) to check which features are implemented.
@@ -101,6 +101,8 @@ normal generic classes will not be affected.
 * [ ] Multiple file compilation support.
 * [ ] Cross-assembly compilation support.
 * [ ] Function template.
+* [ ] SFINAE.
+* [ ] Better runtime support (proper way to do reflection, etc.).
 
 ## License
 
