@@ -14,7 +14,7 @@ See section [Roadmap](#roadmap) to check which features are implemented.
 StaticTemplate.exe test.cs
 ```
 
-... and a `test.exe` will be generated in current directory.
+... and a `test.exe` (no matter what names the source files have) will be generated in current directory.
 
 ## Example
 
@@ -95,12 +95,13 @@ normal generic classes will not be affected.
 
 ## Roadmap
 
-* [x] Type parameter substitution.
+* [x] Template instantiation via type parameter substitution.
 * [ ] Specialization.
 * [ ] Partial specialization.
-* [ ] Multiple file compilation support.
-* [ ] Cross-assembly compilation support.
+* [ ] Cross-file template instantiation.
+* [ ] Cross-assembly template instantiation.
 * [ ] Function template.
+* [ ] Support other types (`int`, `bool`, etc.) of template parameters.
 * [ ] SFINAE.
 * [ ] Better runtime support (proper way to do reflection, etc.).
 
