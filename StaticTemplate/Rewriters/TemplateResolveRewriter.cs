@@ -14,7 +14,6 @@ namespace StaticTemplate
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
-        private Dictionary<string, ClassTemplateGroupBuilder> TemplateGroupBuilders;
         private Dictionary<string, ClassTemplateGroup> TemplateGroups;
         private SemanticModel SemanticModel;
 
@@ -25,7 +24,7 @@ namespace StaticTemplate
             SemanticModel = semanticModel;
             TemplateInstantiations = new Dictionary<string, ClassDeclarationSyntax>();
 
-            TemplateGroupBuilders = new Dictionary<string, ClassTemplateGroupBuilder>();
+            var TemplateGroupBuilders = new Dictionary<string, ClassTemplateGroupBuilder>();
             foreach (var classDef in classDefs)
             {
                 var key = classDef.Identifier.ToString();
@@ -34,6 +33,9 @@ namespace StaticTemplate
                     TemplateGroupBuilders[key] = builder = new ClassTemplateGroupBuilder();
                 builder.AddTemplate(new ClassTemplate(classDef));
             }
+            TemplateGroups = TemplateGroupBuilders.Select(pair => Tuple.Create(pair.Key, pair.Value.Build()))
+                                                  .ToDictionary(_ => _.Item1, _ => _.Item2);
+
         }
 
         // currently we only allow templates to appear unnested
@@ -45,9 +47,6 @@ namespace StaticTemplate
             if (TemplateInstantiations.Count == 0)
                 return orig;
 
-            TemplateGroups = TemplateGroupBuilders.Select(pair => Tuple.Create(pair.Key, pair.Value.Build()))
-                                                  .ToDictionary(_ => _.Item1, _ => _.Item2);
-
             return orig.AddMembers(TemplateInstantiations.Values.ToArray());
         }
 
@@ -55,7 +54,7 @@ namespace StaticTemplate
         {
             // if the node does not refer to a template, just return it unmodified
             var templateName = node.Identifier.ToString();
-            if (!TemplateGroupBuilders.ContainsKey(templateName))
+            if (!TemplateGroups.ContainsKey(templateName))
                 return node;
 
             // check if the instantiation is already done
