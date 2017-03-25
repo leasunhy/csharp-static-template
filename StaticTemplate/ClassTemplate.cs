@@ -35,7 +35,6 @@ namespace StaticTemplate
 
             if (IsSpecialized)
             {
-                Debug.Assert(constraintClauses.Count == TypeParamCount, "Currently only full specialization is supported.");
                 var argDict = TypeParams.ToDictionary(p => p.ToString(), p => default(TypeSyntax));
                 foreach (var clause in constraintClauses)
                 {

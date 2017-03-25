@@ -54,27 +54,17 @@ namespace StaticTemplate
         {
             // if the node does not refer to a template, just return it unmodified
             var templateName = node.Identifier.ToString();
-            if (!TemplateGroups.ContainsKey(templateName))
+            ClassTemplateGroup group;
+            if (!TemplateGroups.TryGetValue(templateName, out group))
                 return node;
 
             // check if the instantiation is already done
-            var instName = GetInstantiationName(templateName, node.TypeArgumentList);
+            var instName = group.GetInstantiationNameFor(node.TypeArgumentList.Arguments);
             if (!TemplateInstantiations.ContainsKey(instName))
-            {
-                TemplateInstantiations.Add(instName, InstantiateTemplate(templateName, instName, node.TypeArgumentList));
-            }
+                TemplateInstantiations.Add(instName, group.Instantiate(node.TypeArgumentList.Arguments));
 
             return IdentifierName(instName).WithLeadingTrivia(node.GetLeadingTrivia())
                                            .WithTrailingTrivia(node.GetTrailingTrivia());
         }
-
-        private ClassDeclarationSyntax InstantiateTemplate(string templateName, string instName, TypeArgumentListSyntax typeArgs)
-        {
-            var group = TemplateGroups[templateName];
-            return group.FindTemplateForArguments(typeArgs.Arguments).Instantiate(instName, typeArgs.Arguments);
-        }
-
-        private string GetInstantiationName(string templateName, TypeArgumentListSyntax typeArgs) =>
-            $"{templateName}#{string.Join("_", typeArgs.Arguments.ToString())}#";
     }
 }

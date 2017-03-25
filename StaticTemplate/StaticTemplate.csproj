@@ -158,6 +158,7 @@
     <Compile Include="Rewriters\TemplateExtractRewriter.cs" />
     <Compile Include="Rewriters\TemplateInstantiationRewriter.cs" />
     <Compile Include="Rewriters\TemplateResolveRewriter.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
