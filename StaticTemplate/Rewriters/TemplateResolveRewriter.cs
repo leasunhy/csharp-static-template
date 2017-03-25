@@ -19,9 +19,8 @@ namespace StaticTemplate
 
         internal IDictionary<string, ClassDeclarationSyntax> TemplateInstantiations { get; }
 
-        public TemplateResolveRewriter(SemanticModel semanticModel, IEnumerable<ClassDeclarationSyntax> classDefs)
+        public TemplateResolveRewriter(IEnumerable<ClassDeclarationSyntax> classDefs)
         {
-            SemanticModel = semanticModel;
             TemplateInstantiations = new Dictionary<string, ClassDeclarationSyntax>();
 
             var TemplateGroupBuilders = new Dictionary<string, ClassTemplateGroupBuilder>();
@@ -36,6 +35,12 @@ namespace StaticTemplate
             TemplateGroups = TemplateGroupBuilders.Select(pair => Tuple.Create(pair.Key, pair.Value.Build()))
                                                   .ToDictionary(_ => _.Item1, _ => _.Item2);
 
+        }
+
+        public SyntaxTree ResolveFor(SemanticModel semanticModel, SyntaxTree tree)
+        {
+            SemanticModel = semanticModel;
+            return Visit(tree.GetRoot()).SyntaxTree;
         }
 
         // currently we only allow templates to appear unnested
