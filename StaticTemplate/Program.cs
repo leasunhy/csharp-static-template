@@ -34,8 +34,7 @@ namespace StaticTemplate
                 var newSyntaxNode = templateResolveRewriter.Visit(templateExtractedSyntaxNode);
                 newSyntaxTrees.Add(newSyntaxNode.SyntaxTree);
             }
-            compilation = CSharpCompilation.Create("test", newSyntaxTrees, compilation.References,
-                new CSharpCompilationOptions(OutputKind.ConsoleApplication));
+            compilation = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(newSyntaxTrees);
 
             foreach (var st in compilation.SyntaxTrees)
             {
@@ -64,7 +63,8 @@ namespace StaticTemplate
             var referencePaths = referenceNames.Select(n => Path.Combine(runtimePath, n + ".dll")).ToList();
             var references = referencePaths.Select(p => MetadataReference.CreateFromFile(p)).ToList();
 
-            var options = new CSharpCompilationOptions(OutputKind.ConsoleApplication);
+            var options = new CSharpCompilationOptions(
+                OutputKind.ConsoleApplication, allowUnsafe: true);
             return CSharpCompilation.Create("test", syntaxTrees, references, options);
         }
     }
