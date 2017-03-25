@@ -98,7 +98,7 @@ For more examples, look into the `Examples` folder.
 
 * [x] Template instantiation via type parameter substitution.
 * [x] Full specialization.
-* [ ] Partial specialization.
+* [x] Partial specialization.
 * [ ] Cross-file template instantiation.
 * [ ] Cross-assembly template instantiation.
 * [ ] Function template.
