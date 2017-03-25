@@ -107,6 +107,7 @@ For more examples, look into the `Examples` folder.
 * [ ] Better syntax.
 * [ ] Type aliasing.
 * [ ] Default type arguments.
+* [ ] Other type constraints besides `IsType<T>` for specialization.
 * [ ] SFINAE.
 
 ## License
