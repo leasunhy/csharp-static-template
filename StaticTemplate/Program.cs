@@ -19,7 +19,7 @@ namespace StaticTemplate
         static void Main(string[] args)
         {
             var paths = args.ToList();
-            paths = new List<string>() { "test.cs" };  // for debug purpose
+            paths = new List<string>() { "test1.cs" };  // for debug purpose
             if (paths.Count == 0) return;
             var compilation = CreateCompilation(paths);
 

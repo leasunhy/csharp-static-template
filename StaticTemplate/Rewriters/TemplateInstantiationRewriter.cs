@@ -42,8 +42,8 @@ namespace StaticTemplate
         public override SyntaxNode VisitIdentifierName(IdentifierNameSyntax node)
         {
             // note that we don't need to check whether node is a TypeSyntax,
-            //   because the name of variable, method, etc, is a IdentifierToken,
-            //   not IdentifierNameSyntax.
+            // because the name of variable, method, etc, is a IdentifierToken,
+            // not IdentifierNameSyntax.
             TypeSyntax target;
             if (TypeMap.TryGetValue(node.Identifier.ToString(), out target))
             {

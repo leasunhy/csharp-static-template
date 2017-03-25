@@ -41,7 +41,14 @@ namespace StaticTemplate
             templates.Add(template);
         }
 
-        public ClassTemplateGroup Build() { return new ClassTemplateGroup(templates); }
+        public ClassTemplateGroup Build()
+        {
+            // TODO(leasunhy): add checking for conflicts among templates
+            //                 (e.g. no same specialization on the same type param,
+            //                 all templates should have equal number of type params, etc.)
+            // TODO(leasunhy): add checking for type parameter identifiers (force same names)
+            return new ClassTemplateGroup(templates);
+        }
 
         public IEnumerator<ClassTemplate> GetEnumerator() { return templates.GetEnumerator(); }
         IEnumerator IEnumerable.GetEnumerator() { return templates.GetEnumerator(); }
