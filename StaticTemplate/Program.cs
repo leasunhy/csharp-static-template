@@ -25,20 +25,20 @@ namespace StaticTemplate
                 Environment.Exit(1);
             }
 
-            var solutionPath = args[0];
-            if (!File.Exists(solutionPath))
+            var filePath = args[0];
+            if (!File.Exists(filePath))
             {
-                Console.Error.WriteLine($"File does not exist: {solutionPath}");
+                Console.Error.WriteLine($"File does not exist: {filePath}");
                 Environment.Exit(1);
             }
 
-            CompileDriver.CompileSolution(solutionPath);
+            CompileDriver.Compile(filePath);
         }
 
         private static void ShowUsage()
         {
             var myName = AppDomain.CurrentDomain.FriendlyName;
-            Console.Error.WriteLine($"Usage: {myName} solution-file");
+            Console.Error.WriteLine($"Usage: {myName} [solution-file or single-csharp-file-path]");
         }
     }
 }
