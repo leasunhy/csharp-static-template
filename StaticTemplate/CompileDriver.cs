@@ -72,37 +72,36 @@ namespace StaticTemplate
         public static EmitResult Emit(ref CSharpCompilation compilation, string emitPath = null)
         {
             var templateExtractor = new TemplateExtractRewriter();
-            var templateExtractedSyntaxTrees =
+            var templateExtractedSyntaxTrees = (
                 from sourceTree in compilation.SyntaxTrees
-                select templateExtractor.Visit(sourceTree.GetRoot()).SyntaxTree;
+                select templateExtractor.Visit(sourceTree.GetRoot()).SyntaxTree).ToList();
             var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
 
             var templates = templateExtractor.ClassTemplates;
             var templateResolver = new TemplateResolveRewriter(templates);
-            var templateResolvedSyntaxTrees =
-                from sourceTree in compilation.SyntaxTrees
-                select templateResolver.ResolveFor(extracted.GetSemanticModel(sourceTree), sourceTree);
-            var resolved = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
+            var templateResolvedSyntaxTrees = (
+                from sourceTree in extracted.SyntaxTrees
+                select templateResolver.ResolveFor(extracted.GetSemanticModel(sourceTree), sourceTree)).ToList();
+            var resolved = extracted.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
             compilation = resolved;
 
-            var emitResult = compilation.Emit(emitPath ?? compilation.AssemblyName);
+            var emitResult = compilation.Emit(emitPath ?? compilation.AssemblyName + ".exe");
             return emitResult;
         }
 
         public static void Compile(string filePath)
         {
             var extension = Path.GetExtension(filePath);
-            if (extension == "sln")
+            switch (extension)
             {
-                CompileSolution(filePath);
-            }
-            else if (extension == "cs")
-            {
-                CompileSingleCSharpFile(filePath);
-            }
-            else
-            {
-                throw new ArgumentException("Path should point to a file ending with `.cs` or `.sln`.", filePath);
+                case ".sln":
+                    CompileSolution(filePath);
+                    break;
+                case ".cs":
+                    CompileSingleCSharpFile(filePath);
+                    break;
+                default:
+                    throw new ArgumentException("Path should point to a file ending with `.cs` or `.sln`.", filePath);
             }
         }
 
