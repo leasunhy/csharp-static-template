@@ -17,11 +17,8 @@ namespace StaticTemplate
         private Dictionary<string, ClassTemplateGroup> TemplateGroups;
         private SemanticModel SemanticModel;
 
-        internal IDictionary<string, ClassDeclarationSyntax> TemplateInstantiations { get; }
-
         public TemplateResolveRewriter(IEnumerable<ClassTemplate> classDefs)
         {
-            TemplateInstantiations = new Dictionary<string, ClassDeclarationSyntax>();
             TemplateGroups = classDefs.GroupBy(t => t.TemplateName)
                 .ToDictionary(g => g.Key, g => new ClassTemplateGroupBuilder(g).Build());
         }
@@ -31,18 +28,6 @@ namespace StaticTemplate
         {
             SemanticModel = semanticModel;
             return Visit(tree.GetRoot()).SyntaxTree;
-        }
-
-        // currently we only allow templates to appear unnested
-        public override SyntaxNode VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
-        {
-            var orig = (NamespaceDeclarationSyntax)base.VisitNamespaceDeclaration(node);
-
-            // if no template instantiations found
-            if (TemplateInstantiations.Count == 0)
-                return orig;
-
-            return orig.AddMembers(TemplateInstantiations.Values.ToArray());
         }
 
         public override SyntaxNode VisitGenericName(GenericNameSyntax node)
@@ -55,8 +40,7 @@ namespace StaticTemplate
 
             // check if the instantiation is already done
             var instName = group.GetInstantiationNameFor(node.TypeArgumentList.Arguments);
-            if (!TemplateInstantiations.ContainsKey(instName))
-                TemplateInstantiations.Add(instName, group.Instantiate(node.TypeArgumentList.Arguments));
+            group.Instantiate(node.TypeArgumentList.Arguments);
 
             return IdentifierName(instName).WithLeadingTrivia(node.GetLeadingTrivia())
                                            .WithTrailingTrivia(node.GetTrailingTrivia());

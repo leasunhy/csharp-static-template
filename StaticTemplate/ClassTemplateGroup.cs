@@ -26,6 +26,7 @@ namespace StaticTemplate
 
         public IEnumerator<ClassTemplate> GetEnumerator() { return Templates.GetEnumerator(); }
 
+        // TODO(leasunhy): make this method use full qualified name of type args
         public string GetInstantiationNameFor(IEnumerable<TypeSyntax> typeArgs) =>
             $"{TemplateName}#{string.Join("_", typeArgs.ToString())}#";
 

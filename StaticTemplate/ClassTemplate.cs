@@ -15,6 +15,7 @@ namespace StaticTemplate
 {
     public class ClassTemplate
     {
+        public string OriginalFilePath { get; }
         public ClassDeclarationSyntax Syntax { get; }
         public bool IsSpecialized { get; }
         public int SpecialiedTypeArgCount { get; }
@@ -25,8 +26,11 @@ namespace StaticTemplate
         public int TypeParamCount { get { return Syntax.TypeParameterList.Parameters.Count; } }
         public int RemainingParamCount { get { return TypeParamCount - SpecialiedTypeArgCount; } }
 
+        private Dictionary<string, ClassDeclarationSyntax> instantiations = new Dictionary<string, ClassDeclarationSyntax>();
+
         public ClassTemplate(ClassDeclarationSyntax template)
         {
+            OriginalFilePath = template.SyntaxTree.FilePath;
             Syntax = template;
 
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
@@ -56,9 +60,14 @@ namespace StaticTemplate
 
         public ClassDeclarationSyntax Instantiate(string instantiationName, IEnumerable<TypeSyntax> typeArgs)
         {
-            var rewriter = new TemplateInstantiationRewriter(Syntax, instantiationName, typeArgs);
-            var syntaxTree = (ClassDeclarationSyntax) rewriter.Visit(Syntax);
-            return syntaxTree;
+            if (!instantiations.ContainsKey(instantiationName))
+            {
+                var rewriter = new TemplateInstantiationRewriter(Syntax, instantiationName, typeArgs);
+                var syntaxTree = (ClassDeclarationSyntax)rewriter.Visit(Syntax);
+                instantiations[instantiationName] = syntaxTree;
+                return syntaxTree;
+            }
+            return null;
         }
     }
 }
