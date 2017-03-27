@@ -71,17 +71,20 @@ namespace StaticTemplate
 
         public static EmitResult Emit(ref CSharpCompilation compilation, string emitPath = null)
         {
+            var original = compilation;
             var templateExtractor = new TemplateExtractRewriter();
             var templateExtractedSyntaxTrees = (
-                from sourceTree in compilation.SyntaxTrees
-                select templateExtractor.Visit(sourceTree.GetRoot()).SyntaxTree).ToList();
+                from tree in compilation.SyntaxTrees
+                select templateExtractor.ExtractTemplatesFor(
+                    original.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
             var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
 
             var templates = templateExtractor.ClassTemplates;
             var templateResolver = new TemplateResolveRewriter(templates);
             var templateResolvedSyntaxTrees = (
-                from sourceTree in extracted.SyntaxTrees
-                select templateResolver.ResolveFor(extracted.GetSemanticModel(sourceTree), sourceTree)).ToList();
+                from tree in extracted.SyntaxTrees
+                select templateResolver.ResolveFor(
+                    extracted.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
             var resolved = extracted.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
             compilation = resolved;
 

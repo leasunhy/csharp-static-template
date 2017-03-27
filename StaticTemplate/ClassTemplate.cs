@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Semantics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Diagnostics;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace StaticTemplate
 {
@@ -56,7 +57,8 @@ namespace StaticTemplate
         public ClassDeclarationSyntax Instantiate(string instantiationName, IEnumerable<TypeSyntax> typeArgs)
         {
             var rewriter = new TemplateInstantiationRewriter(Syntax, instantiationName, typeArgs);
-            return (ClassDeclarationSyntax)rewriter.Visit(Syntax);
+            var syntaxTree = (ClassDeclarationSyntax) rewriter.Visit(Syntax);
+            return syntaxTree;
         }
     }
 }

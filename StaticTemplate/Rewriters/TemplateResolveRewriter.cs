@@ -19,24 +19,14 @@ namespace StaticTemplate
 
         internal IDictionary<string, ClassDeclarationSyntax> TemplateInstantiations { get; }
 
-        public TemplateResolveRewriter(IEnumerable<ClassDeclarationSyntax> classDefs)
+        public TemplateResolveRewriter(IEnumerable<ClassTemplate> classDefs)
         {
             TemplateInstantiations = new Dictionary<string, ClassDeclarationSyntax>();
-
-            var TemplateGroupBuilders = new Dictionary<string, ClassTemplateGroupBuilder>();
-            foreach (var classDef in classDefs)
-            {
-                var key = classDef.Identifier.ToString();
-                ClassTemplateGroupBuilder builder;
-                if (!TemplateGroupBuilders.TryGetValue(key, out builder))
-                    TemplateGroupBuilders[key] = builder = new ClassTemplateGroupBuilder();
-                builder.AddTemplate(new ClassTemplate(classDef));
-            }
-            TemplateGroups = TemplateGroupBuilders.Select(pair => Tuple.Create(pair.Key, pair.Value.Build()))
-                                                  .ToDictionary(_ => _.Item1, _ => _.Item2);
-
+            TemplateGroups = classDefs.GroupBy(t => t.TemplateName)
+                .ToDictionary(g => g.Key, g => new ClassTemplateGroupBuilder(g).Build());
         }
 
+        // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-syntax-tree approach
         public SyntaxTree ResolveFor(SemanticModel semanticModel, SyntaxTree tree)
         {
             SemanticModel = semanticModel;

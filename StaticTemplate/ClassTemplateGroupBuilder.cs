@@ -19,15 +19,18 @@ namespace StaticTemplate
             templates = new List<ClassTemplate>();
         }
 
-        public ClassTemplateGroupBuilder(params ClassTemplate[] templates)
+        public ClassTemplateGroupBuilder(IEnumerable<ClassTemplate> templates)
         {
-            if (templates == null || templates.Length == 0)
-                throw new ArgumentException("Argument cannot be null or empty.", "templates");
+            if (templates == null)
+                throw new ArgumentException("Argument cannot be null.", "templates");
+
             TemplateName = templates.First().TemplateName;
             if (!templates.All(t => t.TemplateName == TemplateName))
                 throw new ArgumentException("Templates must have same name.", "templates");
 
             this.templates = templates.ToList();
+            if (!this.templates.Any())
+                throw new ArgumentException("Argument cannot be empty.", "templates");
         }
 
         public void AddTemplate(ClassTemplate template)

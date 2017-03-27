@@ -14,8 +14,9 @@ namespace StaticTemplate
 {
     internal class TemplateExtractRewriter : CSharpSyntaxRewriter
     {
-        private List<ClassDeclarationSyntax> classTemplates = new List<ClassDeclarationSyntax>();
-        internal IEnumerable<ClassDeclarationSyntax> ClassTemplates => classTemplates;
+        private SemanticModel SemanticModel;
+        private List<ClassTemplate> classTemplates = new List<ClassTemplate>();
+        internal IEnumerable<ClassTemplate> ClassTemplates => classTemplates;
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
@@ -35,11 +36,19 @@ namespace StaticTemplate
                                             SyntaxRemoveOptions.KeepExteriorTrivia);
                 newAttrLists.Add(newAttrListSyntax);
             }
-            node = node.WithAttributeLists(newAttrLists);
 
-            classTemplates.Add(node);
+            node = node.WithAttributeLists(newAttrLists);
+            var template = new ClassTemplate(node);
+            classTemplates.Add(template);
 
             return null;
+        }
+
+        // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-syntax-tree approach
+        public SyntaxTree ExtractTemplatesFor(SemanticModel semanticModel, SyntaxTree syntaxTree)
+        {
+            SemanticModel = semanticModel;
+            return Visit(syntaxTree.GetRoot()).SyntaxTree;
         }
     }
 }
