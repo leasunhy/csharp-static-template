@@ -34,6 +34,12 @@ namespace StaticTemplate
                 var compilation = (CSharpCompilation)project.GetCompilationAsync().Result;
 
                 var emitResult = CompileAndEmit(ref compilation);
+#if DEBUG
+                foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
+                {
+                    Console.WriteLine(compilationSyntaxTree.ToString());
+                }
+#endif
                 if (!emitResult.Success)
                 {
                     Console.Error.WriteLine($"Failed to compile project: {project.FilePath}");
@@ -45,12 +51,6 @@ namespace StaticTemplate
                         Console.Error.WriteLine(diag);
                     }
                 }
-#if DEBUG
-                foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
-                {
-                    Console.WriteLine(compilationSyntaxTree.ToString());
-                }
-#endif
             }
         }
 
