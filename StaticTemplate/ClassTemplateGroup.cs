@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace StaticTemplate
 {
@@ -30,7 +31,7 @@ namespace StaticTemplate
         public string GetInstantiationNameFor(IEnumerable<TypeSyntax> typeArgs) =>
             $"{TemplateName}#{string.Join("_", typeArgs.ToString())}#";
 
-        public ClassDeclarationSyntax Instantiate(IEnumerable<TypeSyntax> typeArgs) =>
+        public SyntaxTree Instantiate(IEnumerable<TypeSyntax> typeArgs) =>
             FindTemplateForArguments(typeArgs).Instantiate(GetInstantiationNameFor(typeArgs), typeArgs);
 
         public ClassTemplate FindTemplateForArguments(IEnumerable<TypeSyntax> typeArgs)

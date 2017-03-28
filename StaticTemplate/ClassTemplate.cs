@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Semantics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using StaticTemplate.Rewriters;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace StaticTemplate
@@ -17,6 +18,7 @@ namespace StaticTemplate
     {
         public string OriginalFilePath { get; }
         public ClassDeclarationSyntax Syntax { get; }
+        public CompilationUnitSyntax TemplateIsolation { get; }
         public bool IsSpecialized { get; }
         public int SpecialiedTypeArgCount { get; }
         public string TemplateName { get { return Syntax.Identifier.ToString(); } }
@@ -26,12 +28,14 @@ namespace StaticTemplate
         public int TypeParamCount { get { return Syntax.TypeParameterList.Parameters.Count; } }
         public int RemainingParamCount { get { return TypeParamCount - SpecialiedTypeArgCount; } }
 
-        private Dictionary<string, ClassDeclarationSyntax> instantiations = new Dictionary<string, ClassDeclarationSyntax>();
+        private Dictionary<string, SyntaxTree> instantiations = new Dictionary<string, SyntaxTree>();
+        public IEnumerable<SyntaxTree> Instaniations => instantiations.Values;
 
         public ClassTemplate(ClassDeclarationSyntax template)
         {
             OriginalFilePath = template.SyntaxTree.FilePath;
             Syntax = template;
+            TemplateIsolation = TemplateIsolationRewriter.IsolateFor(Syntax);
 
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
             SpecialiedTypeArgCount = constraintClauses.Count;
@@ -58,16 +62,44 @@ namespace StaticTemplate
             }
         }
 
-        public ClassDeclarationSyntax Instantiate(string instantiationName, IEnumerable<TypeSyntax> typeArgs)
+        public SyntaxTree Instantiate(string instantiationName, IEnumerable<TypeSyntax> typeArgs)
         {
             if (!instantiations.ContainsKey(instantiationName))
             {
-                var rewriter = new TemplateInstantiationRewriter(Syntax, instantiationName, typeArgs);
-                var syntaxTree = (ClassDeclarationSyntax)rewriter.Visit(Syntax);
+                var syntaxTree = TemplateInstantiationRewriter.InstantiateFor(
+                                        TemplateIsolation, Syntax, instantiationName, typeArgs);
                 instantiations[instantiationName] = syntaxTree;
                 return syntaxTree;
             }
             return null;
+        }
+
+        /// <summary>
+        /// This method first determines whether <param name="syntax"></param> is a template,
+        /// then, if it is not, return it unmodified; otherwise clean its attributes and return.
+        /// </summary>
+        /// <param name="syntax"></param>
+        /// <returns></returns>
+        public static ClassDeclarationSyntax CleanClassTemplate(ClassDeclarationSyntax syntax)
+        {
+            // determine whether there is [StaticTemplate] attribute
+            var stAttrList = syntax.AttributeLists.Select(
+                (lst, li) => lst.DescendantNodes()
+                                .OfType<AttributeSyntax>()
+                                .Where(n => n.Name.ToString() == "StaticTemplate")).ToList();
+            if (stAttrList.Any(lst => lst.Any()))
+                return syntax;
+
+            // remove those attributes
+            var newAttrLists = new SyntaxList<AttributeListSyntax>();
+            for (int i = 0; i < syntax.AttributeLists.Count; ++i)
+            {
+                var newAttrListSyntax = syntax.AttributeLists[i].RemoveNodes(stAttrList[i],
+                                            SyntaxRemoveOptions.KeepExteriorTrivia);
+                newAttrLists.Add(newAttrListSyntax);
+            }
+
+            return syntax.WithAttributeLists(newAttrLists);
         }
     }
 }
