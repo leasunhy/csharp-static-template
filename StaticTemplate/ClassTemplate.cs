@@ -34,8 +34,10 @@ namespace StaticTemplate
         public ClassTemplate(ClassDeclarationSyntax template)
         {
             OriginalFilePath = template.SyntaxTree.FilePath;
-            Syntax = template;
-            TemplateIsolation = TemplateIsolationRewriter.IsolateFor(Syntax);
+            Syntax = CleanClassTemplate(template);
+            
+            // get the CompilationUnitSyntax with the template isolated; must use the original syntax node
+            TemplateIsolation = TemplateIsolationRewriter.IsolateFor(template);
 
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
             SpecialiedTypeArgCount = constraintClauses.Count;
@@ -75,8 +77,22 @@ namespace StaticTemplate
         }
 
         /// <summary>
-        /// This method first determines whether <param name="syntax"></param> is a template,
-        /// then, if it is not, return it unmodified; otherwise clean its attributes and return.
+        /// This method determines whether <param name="syntax"></param> is a template.
+        /// </summary>
+        /// <param name="syntax"></param>
+        /// <returns></returns>
+        public static bool IsClassTemplate(ClassDeclarationSyntax syntax)
+        {
+            // determine whether there are [StaticTemplate] attributes
+            var stAttrList = syntax.AttributeLists.Select(
+                (lst, li) => lst.DescendantNodes()
+                                .OfType<AttributeSyntax>()
+                                .Where(n => n.Name.ToString() == "StaticTemplate")).ToList();
+            return stAttrList.Any(lst => lst.Any());
+        }
+
+        /// <summary>
+        /// This method cleans the [StaticTemplate] attributes.
         /// </summary>
         /// <param name="syntax"></param>
         /// <returns></returns>
@@ -88,7 +104,7 @@ namespace StaticTemplate
                                 .OfType<AttributeSyntax>()
                                 .Where(n => n.Name.ToString() == "StaticTemplate")).ToList();
             if (stAttrList.Any(lst => !lst.Any()))
-                return syntax;
+                throw new ArgumentException("argument is not a template", nameof(syntax));
 
             // remove those attributes
             var newAttrLists = new SyntaxList<AttributeListSyntax>();

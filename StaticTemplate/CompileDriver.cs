@@ -42,10 +42,12 @@ namespace StaticTemplate
                 {
                     Console.Error.WriteLine(diag);
                 }
+#if DEBUG
                 foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
                 {
                     Console.WriteLine(compilationSyntaxTree.ToString());
                 }
+#endif
             }
         }
 
@@ -91,7 +93,7 @@ namespace StaticTemplate
             var templateExtractedSyntaxTrees = (
                 from tree in compilation.SyntaxTrees
                 select templateExtractor.Visit(tree.GetRoot()).SyntaxTree.WithFilePath(tree.FilePath)).ToList();
-            templates = templateExtractor.ClassTemplates.ToList();
+            templates = templateExtractor.TemplateSyntaxes.ToList();
             var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
             return extracted;
         }
