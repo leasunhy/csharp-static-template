@@ -204,7 +204,7 @@ namespace StaticTemplate
         private static CSharpCompilation TemplateInstantiatePass(CSharpCompilation compilation,
             IEnumerable<ClassTemplate> templates)
         {
-            var newSyntaxTrees = templates.SelectMany(t => t.Instaniations);
+            var newSyntaxTrees = templates.SelectMany(t => t.Instantiations);
             var instantiated = compilation.AddSyntaxTrees(newSyntaxTrees);
             return instantiated;
         }
