@@ -19,7 +19,7 @@ namespace StaticTemplate
         private Dictionary<string, TypeSyntax> TypeMap;
         private SyntaxToken InstName;
 
-        public TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<TypeSyntax> typeArgs)
+        private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<TypeSyntax> typeArgs)
         {
             TypeArgs = typeArgs.ToList();
             Template = template;
@@ -51,6 +51,15 @@ namespace StaticTemplate
                              .WithTrailingTrivia(node.GetTrailingTrivia());
             }
             return node;
+        }
+
+        public static SyntaxTree InstantiateFor(CompilationUnitSyntax compilationUnit,
+                                                           ClassDeclarationSyntax template,
+                                                           string instName,
+                                                           IEnumerable<TypeSyntax> typeArgs)
+        {
+            var node = new TemplateInstantiationRewriter(template, instName, typeArgs).Visit(compilationUnit);
+            return node.SyntaxTree;
         }
     }
 }
