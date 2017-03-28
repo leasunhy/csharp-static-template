@@ -34,9 +34,7 @@ namespace StaticTemplate
         public ClassTemplate(ClassDeclarationSyntax template)
         {
             OriginalFilePath = template.SyntaxTree.FilePath;
-            Syntax = CleanClassTemplate(template);
-            
-            // get the CompilationUnitSyntax with the template isolated; must use the original syntax node
+            Syntax = template;
             TemplateIsolation = TemplateIsolationRewriter.IsolateFor(template);
 
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();

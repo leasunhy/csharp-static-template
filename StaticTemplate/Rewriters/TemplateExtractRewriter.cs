@@ -14,14 +14,14 @@ namespace StaticTemplate
 {
     internal class TemplateExtractRewriter : CSharpSyntaxRewriter
     {
-        private List<ClassTemplate> templateSyntaxes = new List<ClassTemplate>();
-        public List<ClassTemplate> TemplateSyntaxes => templateSyntaxes;
+        private List<ClassTemplate> classTemplates = new List<ClassTemplate>();
+        public List<ClassTemplate> ClassTemplates => classTemplates;
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             if (!ClassTemplate.IsClassTemplate(node))
                 return node;
-            templateSyntaxes.Add(new ClassTemplate(node));
+            classTemplates.Add(new ClassTemplate(node));
             return null;
         }
     }

@@ -40,7 +40,10 @@ namespace StaticTemplate
                 }
                 foreach (var diag in emitResult.Diagnostics)
                 {
-                    Console.Error.WriteLine(diag);
+                    if (diag.Severity == DiagnosticSeverity.Error || diag.Severity == DiagnosticSeverity.Warning)
+                    {
+                        Console.Error.WriteLine(diag);
+                    }
                 }
 #if DEBUG
                 foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
@@ -93,7 +96,7 @@ namespace StaticTemplate
             var templateExtractedSyntaxTrees = (
                 from tree in compilation.SyntaxTrees
                 select templateExtractor.Visit(tree.GetRoot()).SyntaxTree.WithFilePath(tree.FilePath)).ToList();
-            templates = templateExtractor.TemplateSyntaxes.ToList();
+            templates = templateExtractor.ClassTemplates.ToList();
             var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
             return extracted;
         }

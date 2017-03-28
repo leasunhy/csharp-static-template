@@ -28,7 +28,7 @@ namespace StaticTemplate.Rewriters
         {
             if (node != target)
                 return null;
-            return node;
+            return ClassTemplate.CleanClassTemplate(node);
         }
 
         public static CompilationUnitSyntax IsolateFor(ClassDeclarationSyntax target)
