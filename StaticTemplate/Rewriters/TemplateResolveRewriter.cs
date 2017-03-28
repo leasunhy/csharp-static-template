@@ -12,6 +12,9 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace StaticTemplate.Rewriters
 {
+    /// <summary>
+    /// Resolves usage of templates in a syntax tree.
+    /// </summary>
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
         private readonly IReadOnlyDictionary<string, ClassTemplateGroup> _templateGroups;
@@ -24,13 +27,14 @@ namespace StaticTemplate.Rewriters
             _templateGroups = templateGroups;
         }
 
-        public static SyntaxTree ResolveFor(SyntaxTree tree, SemanticModel semanticModel,
-            IReadOnlyDictionary<string, ClassTemplateGroup> templateGroups)
-        {
-            var rewriter = new TemplateResolveRewriter(semanticModel, templateGroups);
-            return rewriter.Visit(tree.GetRoot()).SyntaxTree;
-        }
-
+        /// <summary>
+        /// Visits a <see cref="GenericNameSyntax"/>. If it uses a template, resolve it.
+        /// <para>Note that this method shall not be called directly. Please use <see cref="ResolveFor"/> instead.</para>
+        /// </summary>
+        /// <param name="node">The syntax node to visit.</param>
+        /// <returns>
+        /// <paramref name="node"/> if it is not a usage of template, or a new node with template usage resolved.
+        /// </returns>
         public override SyntaxNode VisitGenericName(GenericNameSyntax node)
         {
             // if the node does not refer to a template, just return it unmodified
@@ -52,6 +56,20 @@ namespace StaticTemplate.Rewriters
 
             return IdentifierName(instName).WithLeadingTrivia(node.GetLeadingTrivia())
                                            .WithTrailingTrivia(node.GetTrailingTrivia());
+        }
+
+        /// <summary>
+        /// Resolves template usages for a syntax tree, given its semantic model and the templates in scope.
+        /// </summary>
+        /// <param name="tree">The syntax tree.</param>
+        /// <param name="semanticModel">The semantic model for <paramref name="tree"/></param>
+        /// <param name="templateGroups">The templates in scope, grouped by their names.</param>
+        /// <returns></returns>
+        public static SyntaxTree ResolveFor(SyntaxTree tree, SemanticModel semanticModel,
+            IReadOnlyDictionary<string, ClassTemplateGroup> templateGroups)
+        {
+            var rewriter = new TemplateResolveRewriter(semanticModel, templateGroups);
+            return rewriter.Visit(tree.GetRoot()).SyntaxTree;
         }
     }
 }
