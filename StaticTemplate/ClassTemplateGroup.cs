@@ -10,14 +10,41 @@ using Microsoft.CodeAnalysis;
 
 namespace StaticTemplate
 {
+    /// <summary>
+    /// Represents a group of templates.
+    /// <para>A template group has a primary template (i.e. not specialized), and arbitrary number of
+    /// specialized templates.</para>
+    /// <para>Note that no templates with the same name but with different number of
+    /// type parameters can be declared.</para>
+    /// </summary>
     public class ClassTemplateGroup : IEnumerable<ClassTemplate>
     {
+        /// <summary>
+        /// The <see cref="ClassTemplate"/> members.
+        /// </summary>
         public IEnumerable<ClassTemplate> Templates { get; }
+
+        /// <summary>
+        /// The primary template in the template group.
+        /// </summary>
         public ClassTemplate PrimaryTemplate { get; }
 
+        /// <summary>
+        /// The count of type parameters.
+        /// </summary>
         public int TypeParamCount => PrimaryTemplate.TypeParamCount;
+
+        /// <summary>
+        /// The name of the template.
+        /// </summary>
         public string TemplateName => PrimaryTemplate.TemplateName;
 
+        /// <summary>
+        /// Constructs a <see cref="ClassTemplateGroup"/> from a sequence of templates.
+        /// The constructor determines which one of the templates is the primary one,
+        /// and checks if the templates meet the conditions.
+        /// </summary>
+        /// <param name="templates">The sequence of templates that should belong to the same group.</param>
         public ClassTemplateGroup(IEnumerable<ClassTemplate> templates)
         {
             // TODO(leasunhy): add checking for conflicts among templates
@@ -42,22 +69,36 @@ namespace StaticTemplate
 
         public IEnumerator<ClassTemplate> GetEnumerator() { return Templates.GetEnumerator(); }
 
-        // TODO(leasunhy): make this method use full qualified name of type args
+        /// <summary>
+        /// Get the name of template instantiation for a set of arguments.
+        /// </summary>
+        /// <param name="typeArgs">The type arguments the template is istantiated for.</param>
+        /// <returns>The name for the instantiation.</returns>
         public string GetInstantiationNameFor(IEnumerable<INamedTypeSymbol> typeArgs) =>
             $"{TemplateName}#{string.Join(":", typeArgs.Select(a => a.ToDisplayString()))}#";
 
+        /// <summary>
+        /// Looks for the best matched template for given type arguments and instantiate the template with those arguments.
+        /// </summary>
+        /// <param name="typeArgs">The type arguments.</param>
         public void Instantiate(IEnumerable<INamedTypeSymbol> typeArgs)
         {
             var namedTypeSymbols = typeArgs as INamedTypeSymbol[] ?? typeArgs.ToArray();
             FindTemplateForArguments(namedTypeSymbols).Instantiate(GetInstantiationNameFor(namedTypeSymbols), namedTypeSymbols);
         }
 
+        /// <summary>
+        /// Given type arguments, looks for the best matched template.
+        /// </summary>
+        /// <param name="typeArgs">The type arguments.</param>
+        /// <returns>The best matched templated.</returns>
         public ClassTemplate FindTemplateForArguments(IEnumerable<INamedTypeSymbol> typeArgs)
         {
             var namedTypeSymbols = typeArgs as INamedTypeSymbol[] ?? typeArgs.ToArray();
             if (namedTypeSymbols.Length != TypeParamCount)
                 throw new InvalidOperationException("Incorrect number of type arguements for template" + TemplateName);
 
+            // matching (in terms of specialized type arguments) templates
             var matched = Templates.Select(temp => Tuple.Create(temp, MatchTypeArgs(temp, namedTypeSymbols)))
                                                         .Where(t => t.Item2.Item1);
             var highestRanked = matched.MaxBy(t => t.Item2.Item2).Item2
@@ -73,6 +114,13 @@ namespace StaticTemplate
             throw new Exception("Ambiguous partial specializations for " + GetInstantiationNameFor(namedTypeSymbols));
         }
 
+        /// <summary>
+        /// Given a template and a set of type arguments, checks whether they are matched and the number of matches between
+        /// specialized type arguments and <paramref name="typeArgs"/>.
+        /// </summary>
+        /// <param name="template">The template to check with the arguments.</param>
+        /// <param name="typeArgs">The type arguments to check with the template.</param>
+        /// <returns></returns>
         private static Tuple<bool, int> MatchTypeArgs(ClassTemplate template, IEnumerable<INamedTypeSymbol> typeArgs)
         {
             // TODO(leasunhy): use semantic model?
