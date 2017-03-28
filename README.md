@@ -3,18 +3,31 @@
 This repository implements a Roslyn-based compiler for C#,
 which supports C++-like static templates.
 
-Currently a *POC*, the compiler only supports compilation of a single file,
+Currently a *POC*, the compiler only supports compilation of a single file or a single solution,
 and does not accept any command-line arguments.
 
 See section [Roadmap](#roadmap) to check which features are implemented.
 
 ## Usage
 
+### Compiling single C# file
+
 ```cmd
 StaticTemplate.exe test.cs
 ```
 
-... and a `test.exe` (no matter what names the source files have) will be generated in current directory.
+... and a `test.exe` will be generated in current directory.
+
+### Compiling a solution
+
+```cmd
+StaticTemplate.exe D:\AwesomeSolution\AwesomeSolution.sln
+```
+
+Then the compiler will compile the projects in solution `AwesomeSolution.sln`,
+in topological order.
+
+Assembly files of all projects will be written to current working directory.
 
 ## Example
 
