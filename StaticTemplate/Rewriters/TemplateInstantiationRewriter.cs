@@ -46,17 +46,23 @@ namespace StaticTemplate
             // not IdentifierNameSyntax.
             if (TypeMap.TryGetValue(node.Identifier.ToString(), out INamedTypeSymbol target))
             {
-                //return target.WithLeadingTrivia(node.GetLeadingTrivia())
-                //             .WithTrailingTrivia(node.GetTrailingTrivia());
-                throw new NotImplementedException();
+                if (target.SpecialType != SpecialType.None)
+                {
+                    return PredefinedType(ParseToken(target.ToDisplayString()))
+                        .WithLeadingTrivia(node.GetLeadingTrivia())
+                        .WithTrailingTrivia(node.GetTrailingTrivia());
+                }
+                return ParseTypeName(target.ToDisplayString())
+                        .WithLeadingTrivia(node.GetLeadingTrivia())
+                        .WithTrailingTrivia(node.GetTrailingTrivia());
             }
             return node;
         }
 
         public static SyntaxTree InstantiateFor(CompilationUnitSyntax compilationUnit,
-                                                           ClassDeclarationSyntax template,
-                                                           string instName,
-                                                           IEnumerable<INamedTypeSymbol> typeArgs)
+                                                ClassDeclarationSyntax template,
+                                                string instName,
+                                                IEnumerable<INamedTypeSymbol> typeArgs)
         {
             var node = new TemplateInstantiationRewriter(template, instName, typeArgs).Visit(compilationUnit);
             return node.SyntaxTree;

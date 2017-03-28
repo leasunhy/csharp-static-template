@@ -29,7 +29,7 @@ namespace StaticTemplate
 
         // TODO(leasunhy): make this method use full qualified name of type args
         public string GetInstantiationNameFor(IEnumerable<INamedTypeSymbol> typeArgs) =>
-            $"{TemplateName}#{string.Join(":", typeArgs.ToString())}#";
+            $"{TemplateName}#{string.Join(":", typeArgs.Select(a => a.ToDisplayString()))}#";
 
         public SyntaxTree Instantiate(IEnumerable<INamedTypeSymbol> typeArgs) =>
             FindTemplateForArguments(typeArgs).Instantiate(GetInstantiationNameFor(typeArgs), typeArgs);

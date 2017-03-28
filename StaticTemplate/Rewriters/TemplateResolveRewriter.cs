@@ -38,8 +38,13 @@ namespace StaticTemplate
             if (!TemplateGroups.TryGetValue(templateName, out group))
                 return node;
 
+            // ?: t => SemanticModel.GetTypeInfo(t).Type ?? SemanticModel.GetDeclaredSymbol(t)
             var symbols = node.TypeArgumentList.Arguments.Select(t => SemanticModel.GetTypeInfo(t).Type)
                                                          .Cast<INamedTypeSymbol>().ToList();
+            if (symbols.Any(s => s == null))
+            {
+                throw new Exception("Can't get symbol for some wtemplate type argument.");
+            }
             // check if the instantiation is already done
             var instName = group.GetInstantiationNameFor(symbols);
             group.Instantiate(symbols);
