@@ -14,20 +14,21 @@ namespace StaticTemplate.Rewriters
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
-        private readonly Dictionary<string, ClassTemplateGroup> _templateGroups;
+        private readonly IReadOnlyDictionary<string, ClassTemplateGroup> _templateGroups;
         private SemanticModel _semanticModel;
 
-        public TemplateResolveRewriter(IEnumerable<ClassTemplate> classDefs)
-        {
-            _templateGroups = classDefs.GroupBy(t => t.TemplateName)
-                .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
-        }
-
-        // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-syntax-tree approach
-        public SyntaxTree ResolveFor(SemanticModel semanticModel, SyntaxTree tree)
+        private TemplateResolveRewriter(SemanticModel semanticModel,
+            IReadOnlyDictionary<string, ClassTemplateGroup> templateGroups)
         {
             _semanticModel = semanticModel;
-            return Visit(tree.GetRoot()).SyntaxTree;
+            _templateGroups = templateGroups;
+        }
+
+        public static SyntaxTree ResolveFor(SyntaxTree tree, SemanticModel semanticModel,
+            IReadOnlyDictionary<string, ClassTemplateGroup> templateGroups)
+        {
+            var rewriter = new TemplateResolveRewriter(semanticModel, templateGroups);
+            return rewriter.Visit(tree.GetRoot()).SyntaxTree;
         }
 
         public override SyntaxNode VisitGenericName(GenericNameSyntax node)

@@ -104,11 +104,12 @@ namespace StaticTemplate
 
         public static CSharpCompilation TemplateResolvePass(CSharpCompilation compilation, IEnumerable<ClassTemplate> templates)
         {
-            var templateResolver = new TemplateResolveRewriter(templates);
+            var templateGroups = templates.GroupBy(t => t.TemplateName)
+                .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
             var templateResolvedSyntaxTrees = (
                 from tree in compilation.SyntaxTrees
-                select templateResolver.ResolveFor(
-                    compilation.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
+                select TemplateResolveRewriter.ResolveFor(tree, compilation.GetSemanticModel(tree), templateGroups)
+                                              .WithFilePath(tree.FilePath)).ToList();
             var resolved = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
             return resolved;
         }
