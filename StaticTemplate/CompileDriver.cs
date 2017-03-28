@@ -20,108 +20,11 @@ namespace StaticTemplate
 {
     public static class CompileDriver
     {
-        public static void CompileSolution(string solutionPath)
-        {
-            var workspace = MSBuildWorkspace.Create();
-            var solution = workspace.OpenSolutionAsync(solutionPath).Result;
-            var projectIds = solution.GetProjectDependencyGraph().GetTopologicallySortedProjects();
-            var projects = projectIds.Select(pid => solution.GetProject(pid));
-            foreach (var project in projects)
-            {
-                if (project.Language != "C#")
-                {
-                    Console.WriteLine($"Skipping non-c# project {project.FilePath}");
-                }
-                var compilation = (CSharpCompilation)project.GetCompilationAsync().Result;
-
-                var emitResult = CompileAndEmit(ref compilation);
-#if DEBUG
-                foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
-                {
-                    Console.WriteLine(compilationSyntaxTree.ToString());
-                }
-#endif
-                if (!emitResult.Success)
-                {
-                    Console.Error.WriteLine($"Failed to compile project: {project.FilePath}");
-                }
-                foreach (var diag in emitResult.Diagnostics)
-                {
-                    if (diag.Severity == DiagnosticSeverity.Error || diag.Severity == DiagnosticSeverity.Warning)
-                    {
-                        Console.Error.WriteLine(diag);
-                    }
-                }
-            }
-        }
-
-        public static void CompileSingleCSharpFile(string filePath)
-        {
-            var sourceText = File.ReadAllText(filePath);
-            var syntaxTree = CSharpSyntaxTree.ParseText(sourceText).WithFilePath(filePath);
-
-            var runtimePath = RuntimeEnvironment.GetRuntimeDirectory();
-            var referenceNames = new [] { "mscorlib", "System", "System.Core", "System.Runtime", "System.Linq" };
-            var referencePaths = referenceNames.Select(n => Path.Combine(runtimePath, n + ".dll")).ToList();
-            var references = referencePaths.Select(p => MetadataReference.CreateFromFile(p)).ToList();
-            var options = new CSharpCompilationOptions(OutputKind.ConsoleApplication, allowUnsafe: true);
-            var assemblyName = Path.GetFileNameWithoutExtension(filePath) + ".exe";
-            var compilation = CSharpCompilation.Create(assemblyName, new[] {syntaxTree}, references, options);
-
-            var emitResult = CompileAndEmit(ref compilation);
-            if (!emitResult.Success)
-            {
-                Console.Error.WriteLine($"Failed to compile file: {filePath}");
-            }
-            foreach (var diag in emitResult.Diagnostics)
-            {
-                Console.Error.WriteLine(diag);
-            }
-        }
-
-        public static EmitResult CompileAndEmit(ref CSharpCompilation compilation, string emitPath = null)
-        {
-            var extracted = TemplateExtractPass(compilation, out List<ClassTemplate> templates);
-            var resolved = TemplateResolvePass(extracted, templates);
-            var instantiated = TemplateInstantiatePass(resolved, templates);
-
-            compilation = instantiated;
-
-            var emitResult = compilation.Emit(emitPath ?? compilation.AssemblyName + ".exe");
-            return emitResult;
-        }
-
-        public static CSharpCompilation TemplateExtractPass(CSharpCompilation compilation, out List<ClassTemplate> templates)
-        {
-            var templateExtractResults = (
-                from t in compilation.SyntaxTrees.AsParallel()
-                select TemplateExtractRewriter.Extract(t, compilation.GetSemanticModel(t))).ToList();
-            var templateExtractedSyntaxTrees = templateExtractResults.Select(t => t.Item1).ToList();
-            templates = templateExtractResults.SelectMany(t => t.Item2).ToList();
-            var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
-            return extracted;
-        }
-
-        public static CSharpCompilation TemplateResolvePass(CSharpCompilation compilation, IEnumerable<ClassTemplate> templates)
-        {
-            var templateGroups = templates.GroupBy(t => t.TemplateName)
-                .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
-            var templateResolvedSyntaxTrees = (
-                from tree in compilation.SyntaxTrees.AsParallel()
-                select TemplateResolveRewriter.ResolveFor(tree, compilation.GetSemanticModel(tree), templateGroups)
-                                              .WithFilePath(tree.FilePath)).ToList();
-            var resolved = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
-            return resolved;
-        }
-
-        public static CSharpCompilation TemplateInstantiatePass(CSharpCompilation compilation,
-            IEnumerable<ClassTemplate> templates)
-        {
-            var newSyntaxTrees = templates.SelectMany(t => t.Instaniations);
-            var instantiated = compilation.AddSyntaxTrees(newSyntaxTrees);
-            return instantiated;
-        }
-
+        #region Driver Methods
+        /// <summary>
+        /// Compile either a solution file or a C# source file, according to the extension of its filename.
+        /// </summary>
+        /// <param name="filePath">The path to the file to be compiled.</param>
         public static void Compile(string filePath)
         {
             var extension = Path.GetExtension(filePath);
@@ -138,5 +41,173 @@ namespace StaticTemplate
             }
         }
 
+        /// <summary>
+        /// Compile a C# solution with static templates.
+        /// </summary>
+        /// <param name="solutionPath">The path to the solution file.</param>
+        public static void CompileSolution(string solutionPath)
+        {
+            // create Roslyn workspace and load the solution
+            var workspace = MSBuildWorkspace.Create();
+            var solution = workspace.OpenSolutionAsync(solutionPath).Result;
+
+            // get projects in topological order (which is appropriate for compilation)
+            // TODO(leasunhy): we can achieve more parallelism here
+            var projectIds = solution.GetProjectDependencyGraph().GetTopologicallySortedProjects();
+            var projects = projectIds.Select(pid => solution.GetProject(pid));
+
+            // compile the projects one by one
+            foreach (var project in projects)
+            {
+                if (project.Language != "C#")
+                {
+                    // TODO(leasunhy): how to handle non C# projects?
+                    Console.WriteLine($"Skipping non-c# project {project.FilePath}");
+                    continue;
+                }
+                // get the compilation
+                var compilation = (CSharpCompilation)project.GetCompilationAsync().Result;
+                // compile!
+                var emitResult = CompileAndEmit(ref compilation);
+#if DEBUG
+                // output all processed syntax trees in the solution for debug
+                foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
+                {
+                    Console.WriteLine(compilationSyntaxTree.ToString());
+                }
+#endif
+                if (!emitResult.Success)
+                {
+                    Console.Error.WriteLine($"Failed to compile project: {project.FilePath}");
+                }
+                // output compiler diagnostics
+                foreach (var diag in emitResult.Diagnostics)
+                {
+                    if (diag.Severity == DiagnosticSeverity.Error || diag.Severity == DiagnosticSeverity.Warning)
+                    {
+                        Console.Error.WriteLine(diag);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compile a single C# file with static templates.
+        /// Note that, since assembly references are not easy to infer from the source code,
+        /// only a fixed set of references are added. If you need custom references, 
+        /// please use <see cref="CompileSolution"/> instead.
+        /// </summary>
+        /// <param name="filePath">The path to the C# source file.</param>
+        public static void CompileSingleCSharpFile(string filePath)
+        {
+            // read the source text and parse it into a syntax tree
+            var sourceText = File.ReadAllText(filePath);
+            var syntaxTree = CSharpSyntaxTree.ParseText(sourceText).WithFilePath(filePath);
+
+            // prepare references
+            var runtimePath = RuntimeEnvironment.GetRuntimeDirectory();
+            var referenceNames = new [] { "mscorlib", "System", "System.Core", "System.Runtime", "System.Linq" };
+            var referencePaths = referenceNames.Select(n => Path.Combine(runtimePath, n + ".dll")).ToList();
+            var references = referencePaths.Select(p => MetadataReference.CreateFromFile(p)).ToList();
+
+            // prepare options
+            var options = new CSharpCompilationOptions(OutputKind.ConsoleApplication, allowUnsafe: true);
+            var assemblyName = Path.GetFileNameWithoutExtension(filePath);
+
+            // create compilation
+            var compilation = CSharpCompilation.Create(assemblyName, new[] {syntaxTree}, references, options);
+
+            // compile!
+            var emitResult = CompileAndEmit(ref compilation);
+            if (!emitResult.Success)
+            {
+                Console.Error.WriteLine($"Failed to compile file: {filePath}");
+            }
+            foreach (var diag in emitResult.Diagnostics)
+            {
+                Console.Error.WriteLine(diag);
+            }
+        }
+
+        /// <summary>
+        /// The method compiles <paramref name="compilation"/> with static templates and emits as an executable.
+        /// </summary>
+        /// <param name="compilation"></param>
+        /// <param name="emitPath"></param>
+        /// <returns></returns>
+        public static EmitResult CompileAndEmit(ref CSharpCompilation compilation, string emitPath = null)
+        {
+            // Extract templates, resolve template usages and instantantiate the templates according usages
+            var extracted = TemplateExtractPass(compilation, out List<ClassTemplate> templates);
+            var resolved = TemplateResolvePass(extracted, templates);
+            var instantiated = TemplateInstantiatePass(resolved, templates);
+
+            // return the resulting compilation
+            compilation = instantiated;
+
+            // TODO(leasunhy): what if we need `.dll` instead of `.exe`?
+            var emitResult = compilation.Emit(emitPath ?? compilation.AssemblyName + ".exe");
+            return emitResult;
+        }
+        #endregion
+
+        #region Compilation Passes
+        /// <summary>
+        /// Extract and remove templates from the syntax trees in the compilation in parallel.
+        /// </summary>
+        /// <param name="compilation">The compilation from which templates are extracted.</param>
+        /// <param name="templates">The extracted templates.</param>
+        /// <returns>The compilation containing syntax trees with templates removed.</returns>
+        private static CSharpCompilation TemplateExtractPass(CSharpCompilation compilation, out List<ClassTemplate> templates)
+        {
+            // simutaneously extract and remove the templates from the syntax trees in parallel
+            var templateExtractResults = (
+                from t in compilation.SyntaxTrees.AsParallel()
+                select TemplateExtractRewriter.Extract(t, compilation.GetSemanticModel(t))).ToList();
+            // new syntax trees
+            var templateExtractedSyntaxTrees = templateExtractResults.Select(t => t.Item1).ToList();
+            // each syntax tree may have multiple templates; we use SelectMany (flatMap) here
+            templates = templateExtractResults.SelectMany(t => t.Item2).ToList();
+            // replace syntax trees
+            var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
+            return extracted;
+        }
+
+        /// <summary>
+        /// Given templates and syntax trees that make use of the templates, resolve the usages and instantiate
+        /// the templates upon being used.
+        /// </summary>
+        /// <param name="compilation">The compilation containing syntax trees that uses the templates.</param>
+        /// <param name="templates">The available templates.</param>
+        /// <returns>The compilation with uses of templates resolved.</returns>
+        private static CSharpCompilation TemplateResolvePass(CSharpCompilation compilation, IEnumerable<ClassTemplate> templates)
+        {
+            // construct template groups; see ClassTemplateGroup for details.
+            var templateGroups = templates.GroupBy(t => t.TemplateName)
+                .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
+            // resolve the usages of templates and instantiate the templates with proper arguements
+            var templateResolvedSyntaxTrees = (
+                from tree in compilation.SyntaxTrees.AsParallel()
+                select TemplateResolveRewriter.ResolveFor(tree, compilation.GetSemanticModel(tree), templateGroups)
+                                              .WithFilePath(tree.FilePath)).ToList();
+            // replace syntax trees
+            var resolved = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
+            return resolved;
+        }
+
+        /// <summary>
+        /// Add template instantiations (which are standalone syntax trees) into the compilation.
+        /// </summary>
+        /// <param name="compilation">The compilation to which the syntax trees to be added.</param>
+        /// <param name="templates">The templates.</param>
+        /// <returns>The compilation with new syntax trees added.</returns>
+        private static CSharpCompilation TemplateInstantiatePass(CSharpCompilation compilation,
+            IEnumerable<ClassTemplate> templates)
+        {
+            var newSyntaxTrees = templates.SelectMany(t => t.Instaniations);
+            var instantiated = compilation.AddSyntaxTrees(newSyntaxTrees);
+            return instantiated;
+        }
+        #endregion
     }
 }
