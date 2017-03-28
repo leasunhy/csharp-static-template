@@ -38,9 +38,11 @@ namespace StaticTemplate
             if (!TemplateGroups.TryGetValue(templateName, out group))
                 return node;
 
+            var symbols = node.TypeArgumentList.Arguments.Select(t => SemanticModel.GetTypeInfo(t).Type)
+                                                         .Cast<INamedTypeSymbol>().ToList();
             // check if the instantiation is already done
-            var instName = group.GetInstantiationNameFor(node.TypeArgumentList.Arguments);
-            group.Instantiate(node.TypeArgumentList.Arguments);
+            var instName = group.GetInstantiationNameFor(symbols);
+            group.Instantiate(symbols);
 
             return IdentifierName(instName).WithLeadingTrivia(node.GetLeadingTrivia())
                                            .WithTrailingTrivia(node.GetTrailingTrivia());

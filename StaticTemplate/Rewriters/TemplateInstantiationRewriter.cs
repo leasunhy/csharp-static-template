@@ -14,12 +14,12 @@ namespace StaticTemplate
 {
     public class TemplateInstantiationRewriter : CSharpSyntaxRewriter
     {
-        private List<TypeSyntax> TypeArgs;
+        private List<ITypeSymbol> TypeArgs;
         private ClassDeclarationSyntax Template;
-        private Dictionary<string, TypeSyntax> TypeMap;
+        private Dictionary<string, ITypeSymbol> TypeMap;
         private SyntaxToken InstName;
 
-        private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<TypeSyntax> typeArgs)
+        private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<ITypeSymbol> typeArgs)
         {
             TypeArgs = typeArgs.ToList();
             Template = template;
@@ -44,11 +44,12 @@ namespace StaticTemplate
             // note that we don't need to check whether node is a TypeSyntax,
             // because the name of variable, method, etc, is a IdentifierToken,
             // not IdentifierNameSyntax.
-            TypeSyntax target;
+            ITypeSymbol target;
             if (TypeMap.TryGetValue(node.Identifier.ToString(), out target))
             {
-                return target.WithLeadingTrivia(node.GetLeadingTrivia())
-                             .WithTrailingTrivia(node.GetTrailingTrivia());
+                //return target.WithLeadingTrivia(node.GetLeadingTrivia())
+                //             .WithTrailingTrivia(node.GetTrailingTrivia());
+                throw new NotImplementedException();
             }
             return node;
         }
@@ -56,7 +57,7 @@ namespace StaticTemplate
         public static SyntaxTree InstantiateFor(CompilationUnitSyntax compilationUnit,
                                                            ClassDeclarationSyntax template,
                                                            string instName,
-                                                           IEnumerable<TypeSyntax> typeArgs)
+                                                           IEnumerable<ITypeSymbol> typeArgs)
         {
             var node = new TemplateInstantiationRewriter(template, instName, typeArgs).Visit(compilationUnit);
             return node.SyntaxTree;

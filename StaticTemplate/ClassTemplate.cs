@@ -22,7 +22,7 @@ namespace StaticTemplate
         public bool IsSpecialized { get; }
         public int SpecialiedTypeArgCount { get; }
         public string TemplateName { get { return Syntax.Identifier.ToString(); } }
-        public IEnumerable<TypeSyntax> SpecialiedTypeArgList { get; }
+        public IEnumerable<ITypeSymbol> SpecialiedTypeArgList { get; }
         public string FullName { get { return $"{TemplateName}<{string.Join(", ", TypeParams)}>"; } }
         public IEnumerable<TypeParameterSyntax> TypeParams { get { return Syntax.TypeParameterList.Parameters; } }
         public int TypeParamCount { get { return Syntax.TypeParameterList.Parameters.Count; } }
@@ -31,7 +31,7 @@ namespace StaticTemplate
         private Dictionary<string, SyntaxTree> instantiations = new Dictionary<string, SyntaxTree>();
         public IEnumerable<SyntaxTree> Instaniations => instantiations.Values;
 
-        public ClassTemplate(ClassDeclarationSyntax template)
+        public ClassTemplate(SemanticModel semanticModel, ClassDeclarationSyntax template)
         {
             OriginalFilePath = template.SyntaxTree.FilePath;
             Syntax = template;
@@ -40,11 +40,11 @@ namespace StaticTemplate
             var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
             SpecialiedTypeArgCount = constraintClauses.Count;
             IsSpecialized = SpecialiedTypeArgCount != 0;
-            SpecialiedTypeArgList = new List<TypeSyntax>();
+            SpecialiedTypeArgList = new List<ITypeSymbol>();
 
             if (IsSpecialized)
             {
-                var argDict = TypeParams.ToDictionary(p => p.ToString(), p => default(TypeSyntax));
+                var argDict = TypeParams.ToDictionary(p => p.ToString(), p => default(ITypeSymbol));
                 foreach (var clause in constraintClauses)
                 {
                     var constraint = clause.Constraints.FirstOrDefault() as TypeConstraintSyntax;
@@ -53,7 +53,9 @@ namespace StaticTemplate
                     var type = constraint.Type as GenericNameSyntax;
                     Debug.Assert(type.Identifier.ToString() == "IsType");
                     Debug.Assert(type.TypeArgumentList.Arguments.Count == 1);
-                    argDict[clause.Name.ToString()] = type.TypeArgumentList.Arguments.Single();
+                    var typeSyntax = type.TypeArgumentList.Arguments.Single();
+                    var typeSymbol = (ITypeSymbol) semanticModel.GetDeclaredSymbol(typeSyntax);
+                    argDict[clause.Name.ToString()] = typeSymbol;
                 }
                 SpecialiedTypeArgList = TypeParams.Select(p => argDict[p.ToString()]).ToList();
 
@@ -62,7 +64,7 @@ namespace StaticTemplate
             }
         }
 
-        public SyntaxTree Instantiate(string instantiationName, IEnumerable<TypeSyntax> typeArgs)
+        public SyntaxTree Instantiate(string instantiationName, IEnumerable<ITypeSymbol> typeArgs)
         {
             if (!instantiations.ContainsKey(instantiationName))
             {

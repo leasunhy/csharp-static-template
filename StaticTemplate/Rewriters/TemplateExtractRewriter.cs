@@ -16,13 +16,23 @@ namespace StaticTemplate
     {
         private List<ClassTemplate> classTemplates = new List<ClassTemplate>();
         public List<ClassTemplate> ClassTemplates => classTemplates;
+        private SemanticModel semanticModel = null;
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             if (!ClassTemplate.IsClassTemplate(node))
                 return node;
-            classTemplates.Add(new ClassTemplate(node));
+            classTemplates.Add(new ClassTemplate(semanticModel, node));
             return null;
+        }
+
+        // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-file approach
+        public SyntaxTree ExtractFor(SemanticModel semanticModel, SyntaxTree tree)
+        {
+            this.semanticModel = semanticModel;
+            var newTree = Visit(tree.GetRoot()).SyntaxTree;
+            this.semanticModel = null;
+            return newTree;
         }
     }
 }

@@ -95,7 +95,7 @@ namespace StaticTemplate
             var templateExtractor = new TemplateExtractRewriter();
             var templateExtractedSyntaxTrees = (
                 from tree in compilation.SyntaxTrees
-                select templateExtractor.Visit(tree.GetRoot()).SyntaxTree.WithFilePath(tree.FilePath)).ToList();
+                select templateExtractor.ExtractFor(compilation.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
             templates = templateExtractor.ClassTemplates.ToList();
             var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
             return extracted;
