@@ -61,9 +61,9 @@ namespace StaticTemplate
             var matched = 0;
             template.SpecialiedTypeArgList.ZipWith(typeArgs, (a1, a2) =>
             {
-                success = success && (a1 == null || a1.ToString() == a2.ToString());
+                success = success && (a1 == null || a1.ToDisplayString() == a2.ToDisplayString());
                 if (!success) return;
-                matched += (a1 != null && a1.ToString() == a2.ToString()) ? 1 : 0;
+                matched += a1 != null && a1.ToDisplayString() == a2.ToDisplayString() ? 1 : 0;
             });
             return Tuple.Create(success, matched);
         }

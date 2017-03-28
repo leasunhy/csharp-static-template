@@ -54,7 +54,7 @@ namespace StaticTemplate
                     Debug.Assert(type.Identifier.ToString() == "IsType");
                     Debug.Assert(type.TypeArgumentList.Arguments.Count == 1);
                     var typeSyntax = type.TypeArgumentList.Arguments.Single();
-                    var typeSymbol = (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(typeSyntax);
+                    var typeSymbol = (INamedTypeSymbol)semanticModel.GetTypeInfo(typeSyntax).Type;
                     argDict[clause.Name.ToString()] = typeSymbol;
                 }
                 SpecialiedTypeArgList = TypeParams.Select(p => argDict[p.ToString()]).ToList();
