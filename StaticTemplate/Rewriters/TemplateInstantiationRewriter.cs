@@ -14,12 +14,12 @@ namespace StaticTemplate
 {
     public class TemplateInstantiationRewriter : CSharpSyntaxRewriter
     {
-        private List<ITypeSymbol> TypeArgs;
+        private List<INamedTypeSymbol> TypeArgs;
         private ClassDeclarationSyntax Template;
-        private Dictionary<string, ITypeSymbol> TypeMap;
+        private Dictionary<string, INamedTypeSymbol> TypeMap;
         private SyntaxToken InstName;
 
-        private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<ITypeSymbol> typeArgs)
+        private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<INamedTypeSymbol> typeArgs)
         {
             TypeArgs = typeArgs.ToList();
             Template = template;
@@ -44,8 +44,7 @@ namespace StaticTemplate
             // note that we don't need to check whether node is a TypeSyntax,
             // because the name of variable, method, etc, is a IdentifierToken,
             // not IdentifierNameSyntax.
-            ITypeSymbol target;
-            if (TypeMap.TryGetValue(node.Identifier.ToString(), out target))
+            if (TypeMap.TryGetValue(node.Identifier.ToString(), out INamedTypeSymbol target))
             {
                 //return target.WithLeadingTrivia(node.GetLeadingTrivia())
                 //             .WithTrailingTrivia(node.GetTrailingTrivia());
@@ -57,7 +56,7 @@ namespace StaticTemplate
         public static SyntaxTree InstantiateFor(CompilationUnitSyntax compilationUnit,
                                                            ClassDeclarationSyntax template,
                                                            string instName,
-                                                           IEnumerable<ITypeSymbol> typeArgs)
+                                                           IEnumerable<INamedTypeSymbol> typeArgs)
         {
             var node = new TemplateInstantiationRewriter(template, instName, typeArgs).Visit(compilationUnit);
             return node.SyntaxTree;

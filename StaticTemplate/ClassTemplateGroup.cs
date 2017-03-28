@@ -28,13 +28,13 @@ namespace StaticTemplate
         public IEnumerator<ClassTemplate> GetEnumerator() { return Templates.GetEnumerator(); }
 
         // TODO(leasunhy): make this method use full qualified name of type args
-        public string GetInstantiationNameFor(IEnumerable<ITypeSymbol> typeArgs) =>
+        public string GetInstantiationNameFor(IEnumerable<INamedTypeSymbol> typeArgs) =>
             $"{TemplateName}#{string.Join(":", typeArgs.ToString())}#";
 
-        public SyntaxTree Instantiate(IEnumerable<ITypeSymbol> typeArgs) =>
+        public SyntaxTree Instantiate(IEnumerable<INamedTypeSymbol> typeArgs) =>
             FindTemplateForArguments(typeArgs).Instantiate(GetInstantiationNameFor(typeArgs), typeArgs);
 
-        public ClassTemplate FindTemplateForArguments(IEnumerable<ITypeSymbol> typeArgs)
+        public ClassTemplate FindTemplateForArguments(IEnumerable<INamedTypeSymbol> typeArgs)
         {
             if (typeArgs.Count() != TypeParamCount)
                 throw new InvalidOperationException("Incorrect number of type arguements for template" + TemplateName);
@@ -54,7 +54,7 @@ namespace StaticTemplate
             throw new Exception("Ambiguous partial specializations for " + GetInstantiationNameFor(typeArgs));
         }
 
-        private Tuple<bool, int> MatchTypeArgs(ClassTemplate template, IEnumerable<ITypeSymbol> typeArgs)
+        private Tuple<bool, int> MatchTypeArgs(ClassTemplate template, IEnumerable<INamedTypeSymbol> typeArgs)
         {
             // TODO(leasunhy): use semantic model?
             var success = true;
