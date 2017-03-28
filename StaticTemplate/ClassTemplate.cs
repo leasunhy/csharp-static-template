@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -60,16 +61,18 @@ namespace StaticTemplate
             }
         }
 
-        public SyntaxTree Instantiate(string instantiationName, IEnumerable<INamedTypeSymbol> typeArgs)
+        public void Instantiate(string instantiationName, IEnumerable<INamedTypeSymbol> typeArgs)
         {
             if (!_instantiations.ContainsKey(instantiationName))
             {
-                var syntaxTree = TemplateInstantiationRewriter.InstantiateFor(
-                                        TemplateIsolation, OriginalSyntax, instantiationName, typeArgs);
-                _instantiations[instantiationName] = syntaxTree;
-                return syntaxTree;
+                lock (_instantiations)
+                {
+                    if (_instantiations.ContainsKey(instantiationName)) return;
+                    var syntaxTree = TemplateInstantiationRewriter.InstantiateFor(
+                                            TemplateIsolation, OriginalSyntax, instantiationName, typeArgs);
+                    _instantiations[instantiationName] = syntaxTree;
+                }
             }
-            return null;
         }
 
         /// <summary>

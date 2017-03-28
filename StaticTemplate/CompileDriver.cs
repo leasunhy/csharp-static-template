@@ -94,7 +94,7 @@ namespace StaticTemplate
         public static CSharpCompilation TemplateExtractPass(CSharpCompilation compilation, out List<ClassTemplate> templates)
         {
             var templateExtractResults = (
-                from t in compilation.SyntaxTrees
+                from t in compilation.SyntaxTrees.AsParallel()
                 select TemplateExtractRewriter.Extract(t, compilation.GetSemanticModel(t))).ToList();
             var templateExtractedSyntaxTrees = templateExtractResults.Select(t => t.Item1).ToList();
             templates = templateExtractResults.SelectMany(t => t.Item2).ToList();
@@ -107,7 +107,7 @@ namespace StaticTemplate
             var templateGroups = templates.GroupBy(t => t.TemplateName)
                 .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
             var templateResolvedSyntaxTrees = (
-                from tree in compilation.SyntaxTrees
+                from tree in compilation.SyntaxTrees.AsParallel()
                 select TemplateResolveRewriter.ResolveFor(tree, compilation.GetSemanticModel(tree), templateGroups)
                                               .WithFilePath(tree.FilePath)).ToList();
             var resolved = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
