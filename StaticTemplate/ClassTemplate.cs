@@ -87,7 +87,7 @@ namespace StaticTemplate
                 (lst, li) => lst.DescendantNodes()
                                 .OfType<AttributeSyntax>()
                                 .Where(n => n.Name.ToString() == "StaticTemplate")).ToList();
-            if (stAttrList.Any(lst => lst.Any()))
+            if (stAttrList.Any(lst => !lst.Any()))
                 return syntax;
 
             // remove those attributes
