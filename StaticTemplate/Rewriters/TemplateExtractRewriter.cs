@@ -16,7 +16,12 @@ namespace StaticTemplate.Rewriters
     {
         private readonly List<ClassTemplate> _classTemplates = new List<ClassTemplate>();
         public IEnumerable<ClassTemplate> ClassTemplates => _classTemplates;
-        private SemanticModel _semanticModel;
+        private readonly SemanticModel _semanticModel;
+
+        private TemplateExtractRewriter(SemanticModel semanticModel)
+        {
+            _semanticModel = semanticModel;
+        }
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
@@ -26,13 +31,11 @@ namespace StaticTemplate.Rewriters
             return null;
         }
 
-        // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-file approach
-        public SyntaxTree ExtractFor(SemanticModel semanticModel, SyntaxTree tree)
+        public static (SyntaxTree, IEnumerable<ClassTemplate>) Extract(SyntaxTree tree, SemanticModel semanticModel)
         {
-            _semanticModel = semanticModel;
-            var newTree = Visit(tree.GetRoot()).SyntaxTree;
-            _semanticModel = null;
-            return newTree;
+            var rewriter = new TemplateExtractRewriter(semanticModel);
+            var newTree = rewriter.Visit(tree.GetRoot()).SyntaxTree;
+            return (newTree, rewriter.ClassTemplates);
         }
     }
 }

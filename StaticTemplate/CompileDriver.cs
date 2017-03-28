@@ -93,11 +93,11 @@ namespace StaticTemplate
 
         public static CSharpCompilation TemplateExtractPass(CSharpCompilation compilation, out List<ClassTemplate> templates)
         {
-            var templateExtractor = new TemplateExtractRewriter();
-            var templateExtractedSyntaxTrees = (
-                from tree in compilation.SyntaxTrees
-                select templateExtractor.ExtractFor(compilation.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
-            templates = templateExtractor.ClassTemplates.ToList();
+            var templateExtractResults = (
+                from t in compilation.SyntaxTrees
+                select TemplateExtractRewriter.Extract(t, compilation.GetSemanticModel(t))).ToList();
+            var templateExtractedSyntaxTrees = templateExtractResults.Select(t => t.Item1).ToList();
+            templates = templateExtractResults.SelectMany(t => t.Item2).ToList();
             var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
             return extracted;
         }
