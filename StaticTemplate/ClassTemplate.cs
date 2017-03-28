@@ -27,8 +27,8 @@ namespace StaticTemplate
         public int TypeParamCount => OriginalSyntax.TypeParameterList.Parameters.Count;
         public int RemainingParamCount => TypeParamCount - SpecialiedTypeArgCount;
 
-        private readonly Dictionary<string, SyntaxTree> instantiations = new Dictionary<string, SyntaxTree>();
-        public IEnumerable<SyntaxTree> Instaniations => instantiations.Values;
+        private readonly Dictionary<string, SyntaxTree> _instantiations = new Dictionary<string, SyntaxTree>();
+        public IEnumerable<SyntaxTree> Instaniations => _instantiations.Values;
 
         public ClassTemplate(SemanticModel semanticModel, ClassDeclarationSyntax template)
         {
@@ -62,11 +62,11 @@ namespace StaticTemplate
 
         public SyntaxTree Instantiate(string instantiationName, IEnumerable<INamedTypeSymbol> typeArgs)
         {
-            if (!instantiations.ContainsKey(instantiationName))
+            if (!_instantiations.ContainsKey(instantiationName))
             {
                 var syntaxTree = TemplateInstantiationRewriter.InstantiateFor(
                                         TemplateIsolation, OriginalSyntax, instantiationName, typeArgs);
-                instantiations[instantiationName] = syntaxTree;
+                _instantiations[instantiationName] = syntaxTree;
                 return syntaxTree;
             }
             return null;

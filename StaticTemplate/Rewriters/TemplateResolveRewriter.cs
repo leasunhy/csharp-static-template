@@ -14,19 +14,19 @@ namespace StaticTemplate.Rewriters
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
-        private readonly Dictionary<string, ClassTemplateGroup> TemplateGroups;
-        private SemanticModel SemanticModel;
+        private readonly Dictionary<string, ClassTemplateGroup> _templateGroups;
+        private SemanticModel _semanticModel;
 
         public TemplateResolveRewriter(IEnumerable<ClassTemplate> classDefs)
         {
-            TemplateGroups = classDefs.GroupBy(t => t.TemplateName)
+            _templateGroups = classDefs.GroupBy(t => t.TemplateName)
                 .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
         }
 
         // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-syntax-tree approach
         public SyntaxTree ResolveFor(SemanticModel semanticModel, SyntaxTree tree)
         {
-            SemanticModel = semanticModel;
+            _semanticModel = semanticModel;
             return Visit(tree.GetRoot()).SyntaxTree;
         }
 
@@ -35,11 +35,11 @@ namespace StaticTemplate.Rewriters
             // if the node does not refer to a template, just return it unmodified
             var templateName = node.Identifier.ToString();
             ClassTemplateGroup group;
-            if (!TemplateGroups.TryGetValue(templateName, out group))
+            if (!_templateGroups.TryGetValue(templateName, out group))
                 return node;
 
             // ?: t => SemanticModel.GetTypeInfo(t).Type ?? SemanticModel.GetDeclaredSymbol(t)
-            var symbols = node.TypeArgumentList.Arguments.Select(t => SemanticModel.GetTypeInfo(t).Type)
+            var symbols = node.TypeArgumentList.Arguments.Select(t => _semanticModel.GetTypeInfo(t).Type)
                                                          .Cast<INamedTypeSymbol>().ToList();
             if (symbols.Any(s => s == null))
             {

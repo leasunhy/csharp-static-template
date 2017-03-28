@@ -14,40 +14,39 @@ namespace StaticTemplate.Rewriters
 {
     public class TemplateInstantiationRewriter : CSharpSyntaxRewriter
     {
-        private List<INamedTypeSymbol> TypeArgs;
-        private readonly Dictionary<string, INamedTypeSymbol> TypeMap;
-        private readonly SyntaxToken InstName;
-        private bool inClassDeclaration = false;
+        private readonly Dictionary<string, INamedTypeSymbol> _typeMap;
+        private readonly SyntaxToken _instName;
+        private bool _inClassDeclaration = false;
 
         private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<INamedTypeSymbol> typeArgs)
         {
-            TypeArgs = typeArgs.ToList();
-            if (template.TypeParameterList.Parameters.Count != TypeArgs.Count)
+            var typeArgLst = typeArgs.ToList();
+            if (template.TypeParameterList.Parameters.Count != typeArgLst.Count)
                 throw new InvalidOperationException("Type arguments should be as many as type parameters");
-            TypeMap = template.TypeParameterList
+            _typeMap = template.TypeParameterList
                               .Parameters
-                              .Zip(TypeArgs, (p, a) => Tuple.Create(p.ToString(), a))
+                              .Zip(typeArgLst, (p, a) => Tuple.Create(p.ToString(), a))
                               .ToDictionary(_ => _.Item1, _ => _.Item2);
-            InstName = IdentifierName(instName).Identifier;
+            _instName = IdentifierName(instName).Identifier;
         }
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
-            inClassDeclaration = true;
+            _inClassDeclaration = true;
             var orig = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
-            inClassDeclaration = false;
+            _inClassDeclaration = false;
             var typeparams = orig.TypeParameterList;
-            return orig.RemoveNode(typeparams, SyntaxRemoveOptions.KeepExteriorTrivia).WithIdentifier(InstName);
+            return orig.RemoveNode(typeparams, SyntaxRemoveOptions.KeepExteriorTrivia).WithIdentifier(_instName);
         }
 
         public override SyntaxNode VisitIdentifierName(IdentifierNameSyntax node)
         {
-            if (!inClassDeclaration) return node;
+            if (!_inClassDeclaration) return node;
 
             // note that we don't need to check whether node is a TypeSyntax,
             // because the name of variable, method, etc, is a IdentifierToken,
             // not IdentifierNameSyntax.
-            if (TypeMap.TryGetValue(node.Identifier.ToString(), out INamedTypeSymbol target))
+            if (_typeMap.TryGetValue(node.Identifier.ToString(), out INamedTypeSymbol target))
             {
                 return ParseTypeName(target.ToDisplayString())
                     .WithLeadingTrivia(node.GetLeadingTrivia())

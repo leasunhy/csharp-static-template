@@ -11,11 +11,11 @@ namespace StaticTemplate.Rewriters
 {
     class TemplateIsolationRewriter : CSharpSyntaxRewriter
     {
-        private readonly ClassDeclarationSyntax target;
+        private readonly ClassDeclarationSyntax _target;
 
         private TemplateIsolationRewriter(ClassDeclarationSyntax target)
         {
-            this.target = target;
+            this._target = target;
         }
 
         public override SyntaxNode VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
@@ -26,7 +26,7 @@ namespace StaticTemplate.Rewriters
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
-            if (node != target)
+            if (node != _target)
                 return null;
             return ClassTemplate.CleanClassTemplate(node);
         }
