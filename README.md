@@ -18,6 +18,12 @@ StaticTemplate.exe test.cs
 
 ... and a `test.exe` will be generated in current directory.
 
+*Note*: since it's hard to infer the references from the `using` directives,
+compiling single C# file supports limited references (currently fixed),
+and is only for debug use.
+Please use the method in [Compiling a solution](compiling-a-solution) instead
+if you need custom references.
+
 ### Compiling a solution
 
 ```cmd
@@ -27,7 +33,7 @@ StaticTemplate.exe D:\AwesomeSolution\AwesomeSolution.sln
 Then the compiler will compile the projects in solution `AwesomeSolution.sln`,
 in topological order.
 
-Assembly files of all projects will be written to current working directory.
+Assembly files of all projects will be written to current working directory (to be tuned).
 
 ## Example
 
