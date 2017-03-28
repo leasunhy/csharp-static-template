@@ -17,15 +17,15 @@ namespace StaticTemplate
     public class ClassTemplate
     {
         public string OriginalFilePath { get; }
-        public ClassDeclarationSyntax Syntax { get; }
+        public ClassDeclarationSyntax OriginalSyntax { get; }
         public CompilationUnitSyntax TemplateIsolation { get; }
         public bool IsSpecialized { get; }
         public int SpecialiedTypeArgCount { get; }
-        public string TemplateName { get { return Syntax.Identifier.ToString(); } }
+        public string TemplateName { get { return OriginalSyntax.Identifier.ToString(); } }
         public IEnumerable<INamedTypeSymbol> SpecialiedTypeArgList { get; }
         public string FullName { get { return $"{TemplateName}<{string.Join(", ", TypeParams)}>"; } }
-        public IEnumerable<TypeParameterSyntax> TypeParams { get { return Syntax.TypeParameterList.Parameters; } }
-        public int TypeParamCount { get { return Syntax.TypeParameterList.Parameters.Count; } }
+        public IEnumerable<TypeParameterSyntax> TypeParams { get { return OriginalSyntax.TypeParameterList.Parameters; } }
+        public int TypeParamCount { get { return OriginalSyntax.TypeParameterList.Parameters.Count; } }
         public int RemainingParamCount { get { return TypeParamCount - SpecialiedTypeArgCount; } }
 
         private Dictionary<string, SyntaxTree> instantiations = new Dictionary<string, SyntaxTree>();
@@ -34,10 +34,10 @@ namespace StaticTemplate
         public ClassTemplate(SemanticModel semanticModel, ClassDeclarationSyntax template)
         {
             OriginalFilePath = template.SyntaxTree.FilePath;
-            Syntax = template;
+            OriginalSyntax = template;
             TemplateIsolation = TemplateIsolationRewriter.IsolateFor(template);
 
-            var constraintClauses = Syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
+            var constraintClauses = OriginalSyntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
             SpecialiedTypeArgCount = constraintClauses.Count;
             IsSpecialized = SpecialiedTypeArgCount != 0;
             SpecialiedTypeArgList = new List<INamedTypeSymbol>();
@@ -58,9 +58,6 @@ namespace StaticTemplate
                     argDict[clause.Name.ToString()] = typeSymbol;
                 }
                 SpecialiedTypeArgList = TypeParams.Select(p => argDict[p.ToString()]).ToList();
-
-                // clean the constraint clauses
-                Syntax = Syntax.RemoveNodes(constraintClauses, SyntaxRemoveOptions.KeepExteriorTrivia);
             }
         }
 
@@ -69,7 +66,7 @@ namespace StaticTemplate
             if (!instantiations.ContainsKey(instantiationName))
             {
                 var syntaxTree = TemplateInstantiationRewriter.InstantiateFor(
-                                        TemplateIsolation, Syntax, instantiationName, typeArgs);
+                                        TemplateIsolation, OriginalSyntax, instantiationName, typeArgs);
                 instantiations[instantiationName] = syntaxTree;
                 return syntaxTree;
             }
@@ -98,6 +95,10 @@ namespace StaticTemplate
         /// <returns></returns>
         public static ClassDeclarationSyntax CleanClassTemplate(ClassDeclarationSyntax syntax)
         {
+            // remove constraint clauses
+            var constraintClauses = syntax.ChildNodes().OfType<TypeParameterConstraintClauseSyntax>().ToList();
+            syntax = syntax.RemoveNodes(constraintClauses, SyntaxRemoveOptions.KeepExteriorTrivia);
+
             // determine whether there is [StaticTemplate] attribute
             var stAttrList = syntax.AttributeLists.Select(
                 (lst, li) => lst.DescendantNodes()

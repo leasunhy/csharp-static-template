@@ -18,6 +18,7 @@ namespace StaticTemplate
         private ClassDeclarationSyntax Template;
         private Dictionary<string, INamedTypeSymbol> TypeMap;
         private SyntaxToken InstName;
+        private bool inClassDeclaration = false;
 
         private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<INamedTypeSymbol> typeArgs)
         {
@@ -34,27 +35,25 @@ namespace StaticTemplate
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
+            inClassDeclaration = true;
             var orig = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
+            inClassDeclaration = false;
             var typeparams = orig.TypeParameterList;
             return orig.RemoveNode(typeparams, SyntaxRemoveOptions.KeepExteriorTrivia).WithIdentifier(InstName);
         }
 
         public override SyntaxNode VisitIdentifierName(IdentifierNameSyntax node)
         {
+            if (!inClassDeclaration) return node;
+
             // note that we don't need to check whether node is a TypeSyntax,
             // because the name of variable, method, etc, is a IdentifierToken,
             // not IdentifierNameSyntax.
             if (TypeMap.TryGetValue(node.Identifier.ToString(), out INamedTypeSymbol target))
             {
-                if (target.SpecialType != SpecialType.None)
-                {
-                    return PredefinedType(ParseToken(target.ToDisplayString()))
-                        .WithLeadingTrivia(node.GetLeadingTrivia())
-                        .WithTrailingTrivia(node.GetTrailingTrivia());
-                }
                 return ParseTypeName(target.ToDisplayString())
-                        .WithLeadingTrivia(node.GetLeadingTrivia())
-                        .WithTrailingTrivia(node.GetTrailingTrivia());
+                    .WithLeadingTrivia(node.GetLeadingTrivia())
+                    .WithTrailingTrivia(node.GetTrailingTrivia());
             }
             return node;
         }
@@ -64,7 +63,8 @@ namespace StaticTemplate
                                                 string instName,
                                                 IEnumerable<INamedTypeSymbol> typeArgs)
         {
-            var node = new TemplateInstantiationRewriter(template, instName, typeArgs).Visit(compilationUnit);
+            var rewriter = new TemplateInstantiationRewriter(template, instName, typeArgs);
+            var node = rewriter.Visit(compilationUnit);
             return node.SyntaxTree;
         }
     }
