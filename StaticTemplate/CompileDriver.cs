@@ -33,7 +33,7 @@ namespace StaticTemplate
                 }
                 var compilation = (CSharpCompilation)project.GetCompilationAsync().Result;
 
-                var emitResult = Emit(ref compilation);
+                var emitResult = CompileAndEmit(ref compilation);
                 if (!emitResult.Success)
                 {
                     Console.Error.WriteLine($"Failed to compile project: {project.FilePath}");
@@ -41,6 +41,10 @@ namespace StaticTemplate
                 foreach (var diag in emitResult.Diagnostics)
                 {
                     Console.Error.WriteLine(diag);
+                }
+                foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
+                {
+                    Console.WriteLine(compilationSyntaxTree.ToString());
                 }
             }
         }
@@ -58,7 +62,7 @@ namespace StaticTemplate
             var assemblyName = Path.GetFileNameWithoutExtension(filePath) + ".exe";
             var compilation = CSharpCompilation.Create(assemblyName, new[] {syntaxTree}, references, options);
 
-            var emitResult = Emit(ref compilation);
+            var emitResult = CompileAndEmit(ref compilation);
             if (!emitResult.Success)
             {
                 Console.Error.WriteLine($"Failed to compile file: {filePath}");
@@ -69,27 +73,46 @@ namespace StaticTemplate
             }
         }
 
-        public static EmitResult Emit(ref CSharpCompilation compilation, string emitPath = null)
+        public static EmitResult CompileAndEmit(ref CSharpCompilation compilation, string emitPath = null)
         {
-            var original = compilation;
-            var templateExtractor = new TemplateExtractRewriter();
-            var templateExtractedSyntaxTrees = (
-                from tree in compilation.SyntaxTrees
-                select templateExtractor.ExtractTemplatesFor(
-                    original.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
-            var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
+            var extracted = TemplateExtractPass(compilation, out List<ClassTemplate> templates);
+            var resolved = TemplateResolvePass(extracted, templates);
+            var instantiated = TemplateInstantiatePass(resolved, templates);
 
-            var templates = templateExtractor.ClassTemplates;
-            var templateResolver = new TemplateResolveRewriter(templates);
-            var templateResolvedSyntaxTrees = (
-                from tree in extracted.SyntaxTrees
-                select templateResolver.ResolveFor(
-                    extracted.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
-            var resolved = extracted.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
-            compilation = resolved;
+            compilation = instantiated;
 
             var emitResult = compilation.Emit(emitPath ?? compilation.AssemblyName + ".exe");
             return emitResult;
+        }
+
+        public static CSharpCompilation TemplateExtractPass(CSharpCompilation compilation, out List<ClassTemplate> templates)
+        {
+            var templateExtractor = new TemplateExtractRewriter();
+            var templateExtractedSyntaxTrees = (
+                from tree in compilation.SyntaxTrees
+                select templateExtractor.Visit(tree.GetRoot()).SyntaxTree.WithFilePath(tree.FilePath)).ToList();
+            templates = templateExtractor.ClassTemplates.ToList();
+            var extracted = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateExtractedSyntaxTrees);
+            return extracted;
+        }
+
+        public static CSharpCompilation TemplateResolvePass(CSharpCompilation compilation, IEnumerable<ClassTemplate> templates)
+        {
+            var templateResolver = new TemplateResolveRewriter(templates);
+            var templateResolvedSyntaxTrees = (
+                from tree in compilation.SyntaxTrees
+                select templateResolver.ResolveFor(
+                    compilation.GetSemanticModel(tree), tree).WithFilePath(tree.FilePath)).ToList();
+            var resolved = compilation.RemoveAllSyntaxTrees().AddSyntaxTrees(templateResolvedSyntaxTrees);
+            return resolved;
+        }
+
+        public static CSharpCompilation TemplateInstantiatePass(CSharpCompilation compilation,
+            IEnumerable<ClassTemplate> templates)
+        {
+            var newSyntaxTrees = templates.SelectMany(t => t.Instaniations);
+            var instantiated = compilation.AddSyntaxTrees(newSyntaxTrees);
+            return instantiated;
         }
 
         public static void Compile(string filePath)
