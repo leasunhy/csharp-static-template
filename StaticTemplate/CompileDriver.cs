@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,8 +13,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Semantics;
 using Microsoft.CodeAnalysis.MSBuild;
-using System.Reflection;
-using System.Runtime.InteropServices;
+
+using StaticTemplate.Rewriters;
 
 namespace StaticTemplate
 {

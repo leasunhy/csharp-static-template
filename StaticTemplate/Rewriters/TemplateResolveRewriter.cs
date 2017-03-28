@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Semantics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace StaticTemplate
+namespace StaticTemplate.Rewriters
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
