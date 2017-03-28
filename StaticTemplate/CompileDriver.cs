@@ -18,7 +18,7 @@ using StaticTemplate.Rewriters;
 
 namespace StaticTemplate
 {
-    public class CompileDriver
+    public static class CompileDriver
     {
         public static void CompileSolution(string solutionPath)
         {

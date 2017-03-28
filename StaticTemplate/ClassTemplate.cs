@@ -16,24 +16,22 @@ namespace StaticTemplate
 {
     public class ClassTemplate
     {
-        public string OriginalFilePath { get; }
         public ClassDeclarationSyntax OriginalSyntax { get; }
         public CompilationUnitSyntax TemplateIsolation { get; }
         public bool IsSpecialized { get; }
         public int SpecialiedTypeArgCount { get; }
-        public string TemplateName { get { return OriginalSyntax.Identifier.ToString(); } }
+        public string TemplateName => OriginalSyntax.Identifier.ToString();
         public IEnumerable<INamedTypeSymbol> SpecialiedTypeArgList { get; }
-        public string FullName { get { return $"{TemplateName}<{string.Join(", ", TypeParams)}>"; } }
-        public IEnumerable<TypeParameterSyntax> TypeParams { get { return OriginalSyntax.TypeParameterList.Parameters; } }
-        public int TypeParamCount { get { return OriginalSyntax.TypeParameterList.Parameters.Count; } }
-        public int RemainingParamCount { get { return TypeParamCount - SpecialiedTypeArgCount; } }
+        public string FullName => $"{TemplateName}<{string.Join(", ", TypeParams)}>";
+        public IEnumerable<TypeParameterSyntax> TypeParams => OriginalSyntax.TypeParameterList.Parameters;
+        public int TypeParamCount => OriginalSyntax.TypeParameterList.Parameters.Count;
+        public int RemainingParamCount => TypeParamCount - SpecialiedTypeArgCount;
 
-        private Dictionary<string, SyntaxTree> instantiations = new Dictionary<string, SyntaxTree>();
+        private readonly Dictionary<string, SyntaxTree> instantiations = new Dictionary<string, SyntaxTree>();
         public IEnumerable<SyntaxTree> Instaniations => instantiations.Values;
 
         public ClassTemplate(SemanticModel semanticModel, ClassDeclarationSyntax template)
         {
-            OriginalFilePath = template.SyntaxTree.FilePath;
             OriginalSyntax = template;
             TemplateIsolation = TemplateIsolationRewriter.IsolateFor(template);
 
@@ -51,6 +49,7 @@ namespace StaticTemplate
                     Debug.Assert(clause.Constraints.Count == 1 && constraint != null,
                         "Currently only explicit specialization is supported, exactly one IsType<T> constraint expected.");
                     var type = constraint.Type as GenericNameSyntax;
+                    Debug.Assert(type != null, "Currently only IsType<T> constraint is supported.");
                     Debug.Assert(type.Identifier.ToString() == "IsType");
                     Debug.Assert(type.TypeArgumentList.Arguments.Count == 1);
                     var typeSyntax = type.TypeArgumentList.Arguments.Single();

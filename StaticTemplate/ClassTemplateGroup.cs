@@ -15,14 +15,29 @@ namespace StaticTemplate
         public IEnumerable<ClassTemplate> Templates { get; }
         public ClassTemplate PrimaryTemplate { get; }
 
-        public int TypeParamCount { get { return PrimaryTemplate.TypeParamCount; } }
-        public string TemplateName { get { return PrimaryTemplate.TemplateName; } }
-        public int MaxParamCount { get { return PrimaryTemplate.TypeParamCount; } }
+        public int TypeParamCount => PrimaryTemplate.TypeParamCount;
+        public string TemplateName => PrimaryTemplate.TemplateName;
 
         public ClassTemplateGroup(IEnumerable<ClassTemplate> templates)
         {
-            Templates = templates.ToList();  // we store a copy
-            PrimaryTemplate = Templates.Where(t => !t.IsSpecialized).Single();
+            // TODO(leasunhy): add checking for conflicts among templates
+            //                 (e.g. no same specialization on the same type param,
+            //                 all templates should have equal number of type params, etc.)
+            // TODO(leasunhy): add checking for type parameter identifiers (force same names)
+
+            if (templates == null)
+                throw new ArgumentException("Argument cannot be null.", nameof(templates));
+
+            Templates = templates.ToList();
+
+            var templateName = Templates.First().TemplateName;
+            if (Templates.Any(t => t.TemplateName != templateName))
+                throw new ArgumentException("Templates must have same name.", nameof(templates));
+
+            if (!Templates.Any())
+                throw new ArgumentException("Argument cannot be empty.", nameof(templates));
+
+            PrimaryTemplate = Templates.Single(t => !t.IsSpecialized);
         }
 
         public IEnumerator<ClassTemplate> GetEnumerator() { return Templates.GetEnumerator(); }
@@ -31,30 +46,34 @@ namespace StaticTemplate
         public string GetInstantiationNameFor(IEnumerable<INamedTypeSymbol> typeArgs) =>
             $"{TemplateName}#{string.Join(":", typeArgs.Select(a => a.ToDisplayString()))}#";
 
-        public SyntaxTree Instantiate(IEnumerable<INamedTypeSymbol> typeArgs) =>
-            FindTemplateForArguments(typeArgs).Instantiate(GetInstantiationNameFor(typeArgs), typeArgs);
+        public void Instantiate(IEnumerable<INamedTypeSymbol> typeArgs)
+        {
+            var namedTypeSymbols = typeArgs as INamedTypeSymbol[] ?? typeArgs.ToArray();
+            FindTemplateForArguments(namedTypeSymbols).Instantiate(GetInstantiationNameFor(namedTypeSymbols), namedTypeSymbols);
+        }
 
         public ClassTemplate FindTemplateForArguments(IEnumerable<INamedTypeSymbol> typeArgs)
         {
-            if (typeArgs.Count() != TypeParamCount)
+            var namedTypeSymbols = typeArgs as INamedTypeSymbol[] ?? typeArgs.ToArray();
+            if (namedTypeSymbols.Length != TypeParamCount)
                 throw new InvalidOperationException("Incorrect number of type arguements for template" + TemplateName);
 
-            var matched = Templates.Select(temp => Tuple.Create(temp, MatchTypeArgs(temp, typeArgs)))
+            var matched = Templates.Select(temp => Tuple.Create(temp, MatchTypeArgs(temp, namedTypeSymbols)))
                                                         .Where(t => t.Item2.Item1);
             var highestRanked = matched.MaxBy(t => t.Item2.Item2).Item2
-                                       .Select(t => t.Item1);
-            if (highestRanked.Count() == 1)
+                                       .Select(t => t.Item1).ToList();
+            if (highestRanked.Count == 1)
                 return highestRanked.Single();
 
             // if there are more than one candidates, try determine which one is the most specialized (accepts fewest args)
-            var hasFewestParams = highestRanked.MinBy(t => t.RemainingParamCount).Item2;
-            if (hasFewestParams.Count() == 1)
+            var hasFewestParams = highestRanked.MinBy(t => t.RemainingParamCount).Item2.ToList();
+            if (hasFewestParams.Count == 1)
                 return hasFewestParams.Single();
 
-            throw new Exception("Ambiguous partial specializations for " + GetInstantiationNameFor(typeArgs));
+            throw new Exception("Ambiguous partial specializations for " + GetInstantiationNameFor(namedTypeSymbols));
         }
 
-        private Tuple<bool, int> MatchTypeArgs(ClassTemplate template, IEnumerable<INamedTypeSymbol> typeArgs)
+        private static Tuple<bool, int> MatchTypeArgs(ClassTemplate template, IEnumerable<INamedTypeSymbol> typeArgs)
         {
             // TODO(leasunhy): use semantic model?
             var success = true;

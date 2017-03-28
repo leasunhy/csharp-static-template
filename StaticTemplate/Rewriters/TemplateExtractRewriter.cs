@@ -14,9 +14,9 @@ namespace StaticTemplate.Rewriters
 {
     internal class TemplateExtractRewriter : CSharpSyntaxRewriter
     {
-        private List<ClassTemplate> classTemplates = new List<ClassTemplate>();
-        public List<ClassTemplate> ClassTemplates => classTemplates;
-        private SemanticModel semanticModel = null;
+        private readonly List<ClassTemplate> classTemplates = new List<ClassTemplate>();
+        public IEnumerable<ClassTemplate> ClassTemplates => classTemplates;
+        private SemanticModel semanticModel;
 
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {

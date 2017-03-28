@@ -208,7 +208,6 @@
   <ItemGroup>
     <Compile Include="ClassTemplate.cs" />
     <Compile Include="ClassTemplateGroup.cs" />
-    <Compile Include="ClassTemplateGroupBuilder.cs" />
     <Compile Include="CompileDriver.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

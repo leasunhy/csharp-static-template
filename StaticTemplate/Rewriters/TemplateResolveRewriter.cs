@@ -14,13 +14,13 @@ namespace StaticTemplate.Rewriters
 {
     internal class TemplateResolveRewriter : CSharpSyntaxRewriter
     {
-        private Dictionary<string, ClassTemplateGroup> TemplateGroups;
+        private readonly Dictionary<string, ClassTemplateGroup> TemplateGroups;
         private SemanticModel SemanticModel;
 
         public TemplateResolveRewriter(IEnumerable<ClassTemplate> classDefs)
         {
             TemplateGroups = classDefs.GroupBy(t => t.TemplateName)
-                .ToDictionary(g => g.Key, g => new ClassTemplateGroupBuilder(g).Build());
+                .ToDictionary(g => g.Key, g => new ClassTemplateGroup(g));
         }
 
         // TODO(leasunhy): remove this method in favor of one-rewriter-for-one-syntax-tree approach

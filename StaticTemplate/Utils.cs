@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace StaticTemplate
 {
-    public static class IEnumerableExtensions
+    public static class EnumerableExtensions
     {
         public static IEnumerable<Tuple<T, F>> Zip<T, F>(this IEnumerable<T> enum1, IEnumerable<F> enum2)
         {
@@ -34,25 +34,27 @@ namespace StaticTemplate
             }
         }
 
-        public static Tuple<K, IEnumerable<T>> MaxBy<T, K>(this IEnumerable<T> enumeration,
-                                                           Func<T, K> keySelector)
-            where K : IComparable<K>
+        public static Tuple<TKey, IEnumerable<T>> MaxBy<T, TKey>(this IEnumerable<T> enumeration,
+                                                           Func<T, TKey> keySelector)
+            where TKey : IComparable<TKey>
         {
-            var keys = enumeration.Select(keySelector);
+            var enumerable = enumeration as IList<T> ?? enumeration.ToList();
+            var keys = enumerable.Select(keySelector).ToList();
             var maxKey = keys.Max();
             var results = new List<T>();
-            enumeration.ZipWith(keys, (t, k) => { if (k.CompareTo(maxKey) == 0) results.Add(t); });
+            enumerable.ZipWith(keys, (t, k) => { if (k.CompareTo(maxKey) == 0) results.Add(t); });
             return Tuple.Create(maxKey, (IEnumerable<T>)results);
         }
 
-        public static Tuple<K, IEnumerable<T>> MinBy<T, K>(this IEnumerable<T> enumeration,
-                                                           Func<T, K> keySelector)
-            where K : IComparable<K>
+        public static Tuple<TKey, IEnumerable<T>> MinBy<T, TKey>(this IEnumerable<T> enumeration,
+                                                           Func<T, TKey> keySelector)
+            where TKey : IComparable<TKey>
         {
-            var keys = enumeration.Select(keySelector);
+            var enumerable = enumeration as IList<T> ?? enumeration.ToList();
+            var keys = enumerable.Select(keySelector).ToList();
             var minKey = keys.Min();
             var results = new List<T>();
-            enumeration.ZipWith(keys, (t, k) => { if (k.CompareTo(minKey) == 0) results.Add(t); });
+            enumerable.ZipWith(keys, (t, k) => { if (k.CompareTo(minKey) == 0) results.Add(t); });
             return Tuple.Create(minKey, (IEnumerable<T>)results);
         }
     }

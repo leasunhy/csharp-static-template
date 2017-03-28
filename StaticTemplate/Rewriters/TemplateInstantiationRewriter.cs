@@ -15,20 +15,18 @@ namespace StaticTemplate.Rewriters
     public class TemplateInstantiationRewriter : CSharpSyntaxRewriter
     {
         private List<INamedTypeSymbol> TypeArgs;
-        private ClassDeclarationSyntax Template;
-        private Dictionary<string, INamedTypeSymbol> TypeMap;
-        private SyntaxToken InstName;
+        private readonly Dictionary<string, INamedTypeSymbol> TypeMap;
+        private readonly SyntaxToken InstName;
         private bool inClassDeclaration = false;
 
         private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName, IEnumerable<INamedTypeSymbol> typeArgs)
         {
             TypeArgs = typeArgs.ToList();
-            Template = template;
-            if (template.TypeParameterList.Parameters.Count() != TypeArgs.Count)
+            if (template.TypeParameterList.Parameters.Count != TypeArgs.Count)
                 throw new InvalidOperationException("Type arguments should be as many as type parameters");
             TypeMap = template.TypeParameterList
                               .Parameters
-                              .Zip(typeArgs, (p, a) => Tuple.Create(p.ToString(), a))
+                              .Zip(TypeArgs, (p, a) => Tuple.Create(p.ToString(), a))
                               .ToDictionary(_ => _.Item1, _ => _.Item2);
             InstName = IdentifierName(instName).Identifier;
         }
