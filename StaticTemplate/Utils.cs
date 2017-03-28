@@ -8,6 +8,14 @@ namespace StaticTemplate
 {
     public static class EnumerableExtensions
     {
+        /// <summary>
+        /// Zips <paramref name="enum1"/> with <paramref name="enum2"/> and return the tuples.
+        /// </summary>
+        /// <typeparam name="T">The element type of <paramref name="enum1"/>.</typeparam>
+        /// <typeparam name="F">The element type of <paramref name="enum2"/>.</typeparam>
+        /// <param name="enum1">The first sequence.</param>
+        /// <param name="enum2">The second sequence.</param>
+        /// <returns></returns>
         public static IEnumerable<Tuple<T, F>> Zip<T, F>(this IEnumerable<T> enum1, IEnumerable<F> enum2)
         {
             if (enum1 == null || enum2 == null) { yield break; }
@@ -21,6 +29,14 @@ namespace StaticTemplate
             }
         }
 
+        /// <summary>
+        /// Zips two sequences and calls an action on each resulting tuple.
+        /// </summary>
+        /// <typeparam name="T">The element type of <paramref name="enum1"/>.</typeparam>
+        /// <typeparam name="F">The element type of <paramref name="enum2"/>.</typeparam>
+        /// <param name="enum1">The first sequence.</param>
+        /// <param name="enum2">The second sequence.</param>
+        /// <param name="action">The action to be called on the tuples.</param>
         public static void ZipWith<T, F>(this IEnumerable<T> enum1, IEnumerable<F> enum2, Action<T, F> action)
         {
             if (enum1 == null || enum2 == null) { return; }
@@ -34,8 +50,17 @@ namespace StaticTemplate
             }
         }
 
+        /// <summary>
+        /// Select the max element(s) in the sequence, keys computed using <paramref name="keySelector"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys.</typeparam>
+        /// <param name="enumeration">The sequence.</param>
+        /// <param name="keySelector">A function that takes an element and returns its key.</param>
+        /// <returns>The tuple (maxKey, items), with items being the max elements,
+        /// and maxKey being the key of the max elements.</returns>
         public static Tuple<TKey, IEnumerable<T>> MaxBy<T, TKey>(this IEnumerable<T> enumeration,
-                                                           Func<T, TKey> keySelector)
+                                                                 Func<T, TKey> keySelector)
             where TKey : IComparable<TKey>
         {
             var enumerable = enumeration as IList<T> ?? enumeration.ToList();
@@ -46,8 +71,17 @@ namespace StaticTemplate
             return Tuple.Create(maxKey, (IEnumerable<T>)results);
         }
 
+        /// <summary>
+        /// Select the min element(s) in the sequence, keys computed using <paramref name="keySelector"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys.</typeparam>
+        /// <param name="enumeration">The sequence.</param>
+        /// <param name="keySelector">A function that takes an element and returns its key.</param>
+        /// <returns>The tuple (minKey, items), with items being the min elements,
+        /// and minKey being the key of the min elements.</returns>
         public static Tuple<TKey, IEnumerable<T>> MinBy<T, TKey>(this IEnumerable<T> enumeration,
-                                                           Func<T, TKey> keySelector)
+                                                                 Func<T, TKey> keySelector)
             where TKey : IComparable<TKey>
         {
             var enumerable = enumeration as IList<T> ?? enumeration.ToList();
