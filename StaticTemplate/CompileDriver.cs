@@ -51,43 +51,45 @@ namespace StaticTemplate
             var workspace = MSBuildWorkspace.Create();
             var solution = workspace.OpenSolutionAsync(solutionPath).Result;
 
-            // get projects in topological order (which is appropriate for compilation)
-            // TODO(leasunhy): we can achieve more parallelism here
-            var projectIds = solution.GetProjectDependencyGraph().GetTopologicallySortedProjects();
-            var projects = projectIds.Select(pid => solution.GetProject(pid));
+            // get dependency sets of the projects in the solution
+            var dependencySets = solution.GetProjectDependencyGraph().GetDependencySets();
 
             // compile the projects one by one
-            foreach (var project in projects)
+            foreach (var set in dependencySets)
             {
-                if (project.Language != "C#")
+                set.AsParallel().ForAll(pid =>
                 {
-                    // TODO(leasunhy): how to handle non C# projects?
-                    Console.WriteLine($"Skipping non-c# project {project.FilePath}");
-                    continue;
-                }
-                // get the compilation
-                var compilation = (CSharpCompilation)project.GetCompilationAsync().Result;
-                // compile!
-                var emitResult = CompileAndEmit(ref compilation);
-#if DEBUG
-                // output all processed syntax trees in the solution for debug
-                foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
-                {
-                    Console.WriteLine(compilationSyntaxTree.ToString());
-                }
-#endif
-                if (!emitResult.Success)
-                {
-                    Console.Error.WriteLine($"Failed to compile project: {project.FilePath}");
-                }
-                // output compiler diagnostics
-                foreach (var diag in emitResult.Diagnostics)
-                {
-                    if (diag.Severity == DiagnosticSeverity.Error || diag.Severity == DiagnosticSeverity.Warning)
+                    var project = solution.GetProject(pid);
+                    if (project.Language != "C#")
                     {
-                        Console.Error.WriteLine(diag);
+                        // TODO(leasunhy): how to handle non C# projects?
+                        Console.WriteLine($"Skipping non-c# project {project.FilePath}");
+                        return;
                     }
-                }
+                    // get the compilation
+                    var compilation = (CSharpCompilation)project.GetCompilationAsync().Result;
+                    // compile!
+                    var emitResult = CompileAndEmit(ref compilation);
+#if DEBUG
+                    // output all processed syntax trees in the solution for debug
+                    foreach (var compilationSyntaxTree in compilation.SyntaxTrees)
+                    {
+                        Console.WriteLine(compilationSyntaxTree.ToString());
+                    }
+#endif
+                    if (!emitResult.Success)
+                    {
+                        Console.Error.WriteLine($"Failed to compile project: {project.FilePath}");
+                    }
+                    // output compiler diagnostics
+                    foreach (var diag in emitResult.Diagnostics)
+                    {
+                        if (diag.Severity == DiagnosticSeverity.Error || diag.Severity == DiagnosticSeverity.Warning)
+                        {
+                            Console.Error.WriteLine(diag);
+                        }
+                    }
+                });
             }
         }
 
