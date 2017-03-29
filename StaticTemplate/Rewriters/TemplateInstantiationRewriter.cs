@@ -36,7 +36,6 @@ namespace StaticTemplate.Rewriters
             _instName = IdentifierName(instName).Identifier;
         }
 
-        // TODO(leasunhy): enable nested static templates.
         /// <summary>
         /// Visits a <see cref="ClassDeclarationSyntax"/> which must be the template
         /// if working on a template isolation.
