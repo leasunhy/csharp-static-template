@@ -79,6 +79,30 @@ namespace StaticTemplate.Rewriters
         }
 
         /// <summary>
+        /// Visits the <see cref="ConstructorDeclarationSyntax"/> of a template and rewrites its identifer.
+        /// </summary>
+        /// <param name="node">The syntax node to visit.</param>
+        /// <returns>The syntax node resulting from the procedures described above.</returns>
+        public override SyntaxNode VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+        {
+            if (!_inTemplate) return node;
+            var orig = (ConstructorDeclarationSyntax)base.VisitConstructorDeclaration(node);
+            return orig.WithIdentifier(_instName);
+        }
+
+        /// <summary>
+        /// Visits the <see cref="DestructorDeclarationSyntax"/> of a template and rewrites its identifer.
+        /// </summary>
+        /// <param name="node">The syntax node to visit.</param>
+        /// <returns>The syntax node resulting from the procedures described above.</returns>
+        public override SyntaxNode VisitDestructorDeclaration(DestructorDeclarationSyntax node)
+        {
+            if (!_inTemplate) return node;
+            var orig = (DestructorDeclarationSyntax)base.VisitDestructorDeclaration(node);
+            return orig.WithIdentifier(_instName);
+        }
+
+        /// <summary>
         /// Rewrites a template into a template instance for a given list of arguments.
         /// </summary>
         /// <param name="compilationUnit">
