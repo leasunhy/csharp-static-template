@@ -147,7 +147,7 @@ namespace StaticTemplate
                 {
                     if (_instantiations.ContainsKey(instantiationName)) return;
                     var syntaxTree = TemplateInstantiationRewriter.InstantiateFor(
-                                            TemplateIsolation, OriginalSyntax, instantiationName, typeArgs);
+                                            TemplateIsolation, instantiationName, typeArgs);
                     _instantiations[instantiationName] = syntaxTree;
                 }
             }

@@ -19,18 +19,20 @@ namespace StaticTemplate.Rewriters
     {
         private readonly Dictionary<string, INamedTypeSymbol> _typeMap;
         private readonly SyntaxToken _instName;
-        private bool _inClassDeclaration = false;
+        private bool _inTemplate = false;
+        private readonly ClassDeclarationSyntax _template;
 
         private TemplateInstantiationRewriter(ClassDeclarationSyntax template, string instName,
                                               IEnumerable<INamedTypeSymbol> typeArgs)
         {
+            _template = template;
             var typeArgLst = typeArgs.ToList();
-            if (template.TypeParameterList.Parameters.Count != typeArgLst.Count)
+            if (_template.TypeParameterList.Parameters.Count != typeArgLst.Count)
                 throw new InvalidOperationException("Type arguments should be as many as type parameters");
-            _typeMap = template.TypeParameterList
-                               .Parameters
-                               .Zip(typeArgLst, (p, a) => Tuple.Create(p.ToString(), a))
-                               .ToDictionary(_ => _.Item1, _ => _.Item2);
+            _typeMap = _template.TypeParameterList
+                                .Parameters
+                                .Zip(typeArgLst, (p, a) => Tuple.Create(p.ToString(), a))
+                                .ToDictionary(_ => _.Item1, _ => _.Item2);
             _instName = IdentifierName(instName).Identifier;
         }
 
@@ -44,9 +46,10 @@ namespace StaticTemplate.Rewriters
         /// <returns></returns>
         public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
         {
-            _inClassDeclaration = true;
+            if (node != _template) return node;
+            _inTemplate = true;
             var orig = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
-            _inClassDeclaration = false;
+            _inTemplate = false;
             var typeparams = orig.TypeParameterList;
             return orig.RemoveNode(typeparams, SyntaxRemoveOptions.KeepExteriorTrivia).WithIdentifier(_instName);
         }
@@ -62,7 +65,7 @@ namespace StaticTemplate.Rewriters
             // We only handle the IdentifierNameSyntax nodes inside a ClassDeclarationSyntax.
             // Given we are working on a template isolation, the ClassDeclarationSyntax must
             // be the template itself.
-            if (!_inClassDeclaration) return node;
+            if (!_inTemplate) return node;
 
             // note that we don't need to check whether node is a TypeSyntax,
             // because the name of variable, method, etc, is a IdentifierToken,
@@ -82,15 +85,14 @@ namespace StaticTemplate.Rewriters
         /// <param name="compilationUnit">
         /// The template isolation as described in <see cref="TemplateIsolationRewriter"/>.
         /// </param>
-        /// <param name="template">The template to rewrite.</param>
         /// <param name="instName">The name of the template instance.</param>
         /// <param name="typeArgs">The list of type arguments for the instantiation.</param>
         /// <returns></returns>
         public static SyntaxTree InstantiateFor(CompilationUnitSyntax compilationUnit,
-                                                ClassDeclarationSyntax template,
                                                 string instName,
                                                 IEnumerable<INamedTypeSymbol> typeArgs)
         {
+            var template = compilationUnit.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
             var rewriter = new TemplateInstantiationRewriter(template, instName, typeArgs);
             var node = rewriter.Visit(compilationUnit);
             return node.SyntaxTree;
